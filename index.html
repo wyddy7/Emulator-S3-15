@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ru">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="stylesheet" href="./src/styles/globalstyles.css" />
+        <title>Электроника С3-15</title>
+    </head>
+    <body>
+        <header class="header_s3_15" id="header">
+            <h1>Эмулятор калькулятора С3-15</h1>
+        </header>
+        <main id="main">
+            <div class="calc_container" id="calc_container">
+                <div class="container_item left" id="container_left">
+                    <h1 class="screen_text" id="screen">0.</h1>
+                    <div class="screen" id="screen_container">
+                        <img src="./src/img/calc_btns/screen.png" alt="Экран" />
+                    </div>
+
+                    <div class="line" id="line_1">
+                        <img
+                            src="./src/img/calc_btns/clear_btn.png"
+                            id="btn_clear"
+                            alt="Очистить"
+                        />
+                        <img
+                            src="./src/img/calc_btns/lg_btn.png"
+                            id="btn_lg"
+                            alt="Логарифм lg"
+                        />
+                        <img
+                            src="./src/img/calc_btns/ln_btn.png"
+                            id="btn_ln"
+                            alt="Логарифм ln"
+                        />
+                        <img
+                            src="./src/img/calc_btns/exp_degree_btn.png"
+                            id="btn_exp_degree"
+                            alt="Экспонента"
+                        />
+                        <img src="./src/img/calc_btns/cx_btn.png" id="btn_cx" alt="CX" />
+                    </div>
+                    <div class="line" id="line_2">
+                        <img src="./src/img/calc_btns/arc_btn.png" id="btn_arc" alt="ARC" />
+                        <img src="./src/img/calc_btns/sin_btn.png" id="btn_sin" alt="SIN" />
+                        <img src="./src/img/calc_btns/cos_btn.png" id="btn_cos" alt="COS" />
+                        <img src="./src/img/calc_btns/tg_btn.png" id="btn_tg" alt="TAN" />
+                        <img src="./src/img/calc_btns/zap_btn.png" id="btn_zap" alt="Запись" />
+                    </div>
+                    <div class="line" id="line_3">
+                        <img
+                            src="./src/img/calc_btns/reverse_btn.png"
+                            id="btn_reverse"
+                            alt="Обратное"
+                        />
+                        <img
+                            src="./src/img/calc_btns/sqrt_btn.png"
+                            id="btn_sqrt"
+                            alt="Квадратный корень"
+                        />
+                        <img src="./src/img/calc_btns/p_btn.png" id="btn_p" alt="P" />
+                        <img
+                            src="./src/img/calc_btns/y_degree_btn.png"
+                            id="btn_y_degree"
+                            alt="Y в степени"
+                        />
+                        <img src="./src/img/calc_btns/sch_btn.png" id="btn_sch" alt="SCH" />
+                    </div>
+                    <div class="line" id="line_4">
+                        <img
+                            src="./src/img/calc_btns/equal_btn.png"
+                            id="btn_equal"
+                            alt="Равно"
+                        />
+                        <img
+                            src="./src/img/calc_btns/left_bracket_btn.png"
+                            id="btn_left_bracket"
+                            alt="Левая скобка"
+                        />
+                        <img
+                            src="./src/img/calc_btns/right_bracket_btn.png"
+                            id="btn_right_bracket"
+                            alt="Правая скобка"
+                        />
+                        <img
+                            src="./src/img/calc_btns/change_sign_btn.png"
+                            id="btn_negate"
+                            alt="Смена знака"
+                        />
+                        <img src="./src/img/calc_btns/vp_btn.png" id="btn_vp" alt="VP" />
+                    </div>
+                    <div class="line" id="line_5">
+                        <img
+                            src="./src/img/calc_btns/plus_btn.png"
+                            id="btn_plus"
+                            alt="Плюс"
+                        />
+                        <img
+                            src="./src/img/calc_btns/seven_btn.png"
+                            id="btn_7"
+                            alt="7"
+                        />
+                        <img
+                            src="./src/img/calc_btns/eight_btn.png"
+                            id="btn_8"
+                            alt="8"
+                        />
+                        <img src="./src/img/calc_btns/nine_btn.png" id="btn_9" alt="9" />
+                        <img
+                            src="./src/img/calc_btns/empty_btn_1.png"
+                            id="btn_empty_1"
+                            alt="Пустая кнопка"
+                        />
+                    </div>
+                    <div class="line" id="line_6">
+                        <img
+                            src="./src/img/calc_btns/minus_btn.png"
+                            id="btn_minus"
+                            alt="Минус"
+                        />
+                        <img src="./src/img/calc_btns/four_btn.png" id="btn_4" alt="4" />
+                        <img src="./src/img/calc_btns/five_btn.png" id="btn_5" alt="5" />
+                        <img src="./src/img/calc_btns/six_btn.png" id="btn_6" alt="6" />
+                        <img
+                            src="./src/img/calc_btns/empty_btn_2.png"
+                            id="btn_empty_2"
+                            alt="Пустая кнопка"
+                        />
+                    </div>
+                    <div class="line" id="line_7">
+                        <img
+                            src="./src/img/calc_btns/multiply_btn.png"
+                            id="btn_multiply"
+                            alt="Умножить"
+                        />
+                        <img src="./src/img/calc_btns/one_btn.png" id="btn_1" alt="1" />
+                        <img src="./src/img/calc_btns/two_btn.png" id="btn_2" alt="2" />
+                        <img
+                            src="./src/img/calc_btns/three_btn.png"
+                            id="btn_3"
+                            alt="3"
+                        />
+                        <img
+                            src="./src/img/calc_btns/empty_btn_3.png"
+                            id="btn_empty_3"
+                            alt="Пустая кнопка"
+                        />
+                    </div>
+                    <div class="line" id="line_8">
+                        <img
+                            src="./src/img/calc_btns/division_btn.png"
+                            id="btn_division"
+                            alt="Деление"
+                        />
+                        <img src="./src/img/calc_btns/zero_btn.png" id="btn_0" alt="0" />
+                        <img
+                            src="./src/img/calc_btns/dot_btn.png"
+                            id="btn_dot"
+                            alt="Точка"
+                        />
+                        <img src="./src/img/calc_btns/pi_btn.png" id="btn_pi" alt="Pi" />
+                        <img
+                            src="./src/img/calc_btns/empty_btn_4.png"
+                            id="btn_empty_4"
+                            alt="Пустая кнопка"
+                        />
+                    </div>
+                    <div class="empty_down" id="empty_down">
+                        <img
+                            src="./src/img/calc_btns/empty_btn_5.png"
+                            id="btn_empty_5"
+                            alt="Пустая кнопка"
+                        />
+                    </div>
+                </div>
+                <div class="container_item right" id="container_right">
+                    <div class="page" id="page">
+                        <h1 id="page-title_1"></h1>
+                        <p id="page-text_1"></p>
+                        <h1 id="page-title_2"></h1>
+                        <p id="page-text_2"></p>
+                        <p id="page-text_3"></p>
+                        <p id="page-text_4"></p>
+                    </div>
+                    <ul class="btns_page" id="btns_page">
+                        <li>
+                            <button id="prev-btn" class="btn_page">
+                                Предыдущая
+                            </button>
+                        </li>
+                        <li>
+                            <button id="next-btn" class="btn_page">
+                                Следующая
+                            </button>
+                        </li>
+                    </ul>
+                    <a
+                        class="instruction_link"
+                        id="instruction_link"
+                        href="./instruction.html" target="_blank"
+                        >Инструкция</a
+                    >
+                </div>
+            </div>
+        </main>
+        <footer id="footer">
+            <h4>©️ ОАО «Макеевский Эмуляторный Завод»</h4>
+        </footer>
+
+        <!-- JS PART -->
+        <script src="./JavaScript/logic.js"></script>
+        <script src="./JavaScript/buttons.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.5.0/math.min.js"></script>
+    </body>
+</html>
