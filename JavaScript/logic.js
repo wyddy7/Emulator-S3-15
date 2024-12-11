@@ -28,7 +28,6 @@ const pages = [
 let currentPageIndex = 0;
 let lastPage = pages.length - 1;
 
-
 const titleElement_1 = document.getElementById("page-title_1");
 const titleElement_2 = document.getElementById("page-title_2");
 const textElement_1 = document.getElementById("page-text_1");
