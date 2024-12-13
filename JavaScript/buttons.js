@@ -5,7 +5,7 @@ let currentRegularBrackets = "";
 let Pi = 3.1415926535;
 let exp = 2.718281828459;
 let countP = 0;
-let errorMessage = "............";
+let errorMessage = "error";
 let tempExpression = "";
 let register1 = "";
 let register2 = "";
@@ -13,6 +13,11 @@ let registerFlag1 = 0;
 let registerFlag2 = 0;
 let zapFlag = 0;
 let tempRegister = "";
+let lgFlag = 0;
+let lnFlag = 0;
+let sinFlag = 0;
+let cosFlag = 0;
+let tgFlag = 0;
 
 let openBrackets = 0;
 let closeBrackets = 0;
@@ -24,7 +29,6 @@ function formatNumberAuto(number) {
 
     // Преобразуем строку в число (если не уже)
     const num = Number(number);
-
     // Условие для выбора формата
     if ((Math.abs(num) >= 1e-9 && Math.abs(num) < 1e9) || Math.abs(num) == 0) {
         return num
@@ -32,6 +36,8 @@ function formatNumberAuto(number) {
             .replace(/(\.\d*?)0+$/, "$1")
             .replace(/\.$/, ".");
     } else {
+        console.log("Exponential conversion has occurred.");
+
         return num.toExponential(9).replace(/[eE]/, " "); // Экспоненциальный формат с 6 знаками в мантиссе
     }
 }
@@ -49,6 +55,7 @@ function clearAll() {
     currentNumber = "";
     currentOperation = "";
     currentRegularBrackets = "";
+    lgFlag = lnFlag = sinFlag = cosFlag = tgFlag = 0;
     updateScreen();
 }
 
@@ -72,7 +79,9 @@ function handleInput(value) {
                 break;
             } else {
                 currentOperation = value;
-                currentExpression += currentNumber + value;
+                if (currentExpression != currentNumber)
+                    currentExpression += currentNumber + value;
+                else currentExpression += value;
                 currentNumber = "";
                 break;
             }
@@ -85,7 +94,7 @@ function handleInput(value) {
             closeBrackets = (currentRegularBrackets.match(/\)/g) || []).length;
             if (openBrackets > closeBrackets) {
                 currentExpression += currentNumber + value;
-            } else if (openBrackets === closeBrackets) {
+            } else if (openBrackets === closeBrackets || openBrackets == 0) {
                 currentExpression = "(" + currentExpression + value;
             }
             currentOperation = "";
@@ -95,10 +104,14 @@ function handleInput(value) {
 
         // Очистка последнего числа
         case /cx$/.test(value):
-            currentExpression = currentExpression.slice(
-                0,
-                -currentNumber.length
-            );
+            // currentExpression = currentExpression.slice(
+            //     0,
+            //     -currentNumber.length
+            // );
+            currentNumber = "";
+            break;
+        case /c$/.test(value):
+            clearAll();
             currentNumber = "";
             break;
 
@@ -126,15 +139,41 @@ function handleInput(value) {
                 console.log("temp.lastBrackets: " + temp.lastBrackets);
                 currentExpression =
                     temp.updatedExpression + "log10" + temp.lastBrackets;
+            } else {
+                console.log("LG CHECK NO BRACKETS )");
+                if (currentExpression != currentNumber) {
+                    lgFlag = 1;
+                    bracketFlagCheck(value);
+                }
             }
-
+            currentNumber = "";
+            break;
+        case /ln$/.test(value):
+            currentOperation = value;
+            if (currentExpression.endsWith(")")) {
+                temp = extractBrackets(currentExpression);
+                console.log("ln temp.lastBrackets: " + temp.lastBrackets);
+                currentExpression =
+                    temp.updatedExpression + "log" + temp.lastBrackets;
+            } else {
+                console.log("Ln CHECK NO BRACKETS )");
+                if (currentExpression != currentNumber) {
+                    lnFlag = 1;
+                    bracketFlagCheck(value);
+                }
+            }
             currentNumber = "";
             break;
         case /=$/.test(value):
-            if (!currentExpression.endsWith(currentNumber) || !currentExpression.endsWith(currentNumber + ")") ) {
-                // Здесь вы можете выполнить нужные действия, если currentExpression оканчивается на currentNumber
-                console.log("currentExpression не оканчивается на currentNumber");
-                currentExpression += currentNumber;
+            if (!currentExpression.endsWith(currentNumber)) {
+                if (!currentExpression.endsWith(currentNumber + ")")) {
+                    console.log(
+                        "= currentExpression не оканчивается на currentNumber\ncurrentNumber:" +
+                            currentNumber +
+                            "\ncurrentExpression: " +
+                            currentExpression
+                    );
+                currentExpression += currentNumber;}
             }
             if (bracketCheck(currentExpression) == ">")
                 currentExpression += ")";
@@ -189,19 +228,28 @@ function bracketFlagCheck(value) {
     switch (true) {
         case value == "p":
             currentExpression += tempExpression + currentNumber + "^2)";
+            tempExpression = "";
             break;
-        // case value == "lg":
-        //     currentExpression += tempExpression + ")";
-        //     break;
+        case lgFlag == 1:
+            currentExpression += "log10(" + currentNumber + ")";
+            lgFlag = 0;
+            break;
+        case lnFlag == 1:
+            currentExpression += "log(" + currentNumber + ")";
+            lgFlag = 0;
+            break;
+        case sinFlag == 1:
+            currentExpression += "sin(" + currentNumber + ")";
+            sinFlag = 0;
+            break;
         default:
-            console.warn("Неизвестный ввод: " + value);
+            console.warn("Неизвестный ввод (bracketFlagCheck): " + value);
             break;
     }
 }
 
 function isOperation(operation) {
     if (operation == "p") return 1;
-    // else if (operation == "lg") return 1;
     else return 0;
 }
 
@@ -233,6 +281,7 @@ function calculateResult() {
         );
         currentNumber = errorMessage; // Отображение ошибки на экране
     }
+    console.log("calculation currentNumber: " + currentNumber);
     updateScreen();
 }
 
@@ -267,7 +316,9 @@ document
 document
     .getElementById("btn_9")
     .addEventListener("click", () => handleInput("9"));
-document.getElementById("btn_clear").addEventListener("click", clearAll);
+document
+    .getElementById("btn_clear")
+    .addEventListener("click", () => handleInput("c"));
 document
     .getElementById("btn_dot")
     .addEventListener("click", () => handleInput("."));
@@ -329,29 +380,38 @@ document
     .getElementById("btn_sqrt")
     .addEventListener("click", () => handleInput("sqrt"));
 
+/*
+C
+lg
+ln
+e^x
+Cx
+arc
+sin
+cos
+tg
+зап
+1/x
+sqrt()
+/p/
+y^x
+сч
+/-/ 
+вп
+*/
 (() => {
-    currentExpression = "3+4*(7*log10(sqrt(7^2+9^2)*(6 - 2))+6)";
+    currentExpression = "3+4*(7*log10(sqrt(7^2+9^2)*(6-2))+6)";
     handleInput("=");
-    // currentExpression = "3+4"
     console.log("Result must be: " + currentExpression + "\n\n");
     clearAll();
     handleInput("3");
     handleInput("+");
-    // console.log("aftermath:" + currentExpression);
     handleInput("4");
     handleInput("*");
-    // console.log("aftermath:" + currentExpression);
     handleInput("(");
     handleInput("7");
     handleInput("*");
-    console.log(
-        "cur operation: " +
-            currentOperation +
-            " and expression: " +
-            currentExpression
-    );
     handleInput("(");
-    // console.log("aftermath:" + currentExpression);
     handleInput("7");
     handleInput("p");
     handleInput("9");
@@ -362,10 +422,36 @@ document
     handleInput("2");
     handleInput(")");
     handleInput(")");
-    console.log("currentExpression anonymous: " + currentExpression);
     handleInput("lg");
     handleInput("+");
     handleInput("6");
     handleInput("=");
     console.log("result is: " + currentExpression);
+    handleInput("+");
+    handleInput("9");
+    handleInput("=");
+    console.log("aftermath: " + currentExpression);
+    handleInput("+");
+    handleInput("140");
+    handleInput("=");
+    console.log("aftermath 2: " + currentExpression);
+    handleInput("c");
+    handleInput("5");
+    handleInput("4");
+    handleInput("0");
+    handleInput("lg");
+    handleInput("=");
+    console.log("aftermath log10(540): " + currentExpression);
+    handleInput("c");
+    handleInput("1");
+    handleInput("1");
+    handleInput("ln");
+    handleInput("=");
+    console.log("aftermath log(11): " + currentExpression);
+    handleInput("1");
+    handleInput("1");
+    handleInput("*");
+    handleInput("2");
+    handleInput("1");
+    handleInput("=");
 })();
