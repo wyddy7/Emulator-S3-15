@@ -1,5 +1,27 @@
 {
+  "name": "electronika-s3-15",
+  "version": "0.3.0",
+  "description": "Эмулятор советского инженерного калькулятора С3-15",
+  "main": "index.html",
+  "scripts": {
+    "test": "jest",
+    "start": "http-server -o"
+  },
   "dependencies": {
     "mathjs": "^14.0.0"
-  }
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "http-server": "^14.1.1"
+  },
+  "jest": {
+    "testEnvironment": "jsdom",
+    "moduleDirectories": [
+      "node_modules",
+      "JavaScript"
+    ]
+  },
+  "author": "ОАО «Макеевский Эмуляторный Завод»",
+  "license": "MIT"
 }

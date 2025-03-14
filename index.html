@@ -5,6 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link rel="stylesheet" href="./src/styles/globalstyles.css" />
         <title>Электроника С3-15</title>
+        <link rel="icon" href="data:;base64,iVBORw0KGgo=">
     </head>
     <body>
         <header class="header_s3_15" id="header">
@@ -209,9 +210,13 @@
         </footer>
 
         <!-- JS PART -->
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.5.0/math.min.js"></script>
-        <script src="./JavaScript/logic.js"></script>
+        <script src="./node_modules/mathjs/lib/browser/math.js"></script>
         <script src="./JavaScript/buttons.js"></script>
-        <!-- <script src="./node_modules/mathjs/lib/browser/math.js"></script> -->
+        <script src="./JavaScript/logic.js"></script>
+        <script src="./JavaScript/calculator.js"></script>
+        <script src="./JavaScript/logger.js"></script>
+        <script src="./JavaScript/parser.js"></script>
+        <!-- Скрипт для ручного тестирования -->
+        <script src="./JavaScript/tests/manual-test.js"></script>
     </body>
 </html>
