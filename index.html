@@ -176,32 +176,34 @@
                     </div>
                 </div>
                 <div class="container_item right" id="container_right">
-                    <div class="page" id="page">
-                        <h1 id="page-title_1"></h1>
-                        <p id="page-text_1"></p>
-                        <h1 id="page-title_2"></h1>
-                        <p id="page-text_2"></p>
-                        <p id="page-text_3"></p>
-                        <p id="page-text_4"></p>
+                    <!-- Новая структура для инструкции -->
+                    <div class="instruction-container">
+                        <div class="instruction-tabs">
+                            <button class="tab-button active" data-tab="instruction">Инструкция</button>
+                            <button class="tab-button" data-tab="examples">Примеры/Ограничения</button>
+                        </div>
+                
+                        <div class="instruction-content-area" id="instruction-content-area">
+                            <!-- Контент для вкладки "Инструкция" -->
+                            <div id="instruction-tab-content" class="tab-content active">
+                                <!-- Сюда будет динамически добавляться контент секций -->
+                                <div id="instruction-section-content">
+                                    <!-- Место для текущей секции -->
+                                </div>
+                            </div>
+                
+                            <!-- Контент для вкладки "Примеры/Ограничения" -->
+                            <div id="examples-tab-content" class="tab-content">
+                                <!-- Сюда будет добавляться контент примеров и ограничений -->
+                            </div>
+                        </div>
+                         <!-- Пагинация теперь ЗДЕСЬ, вне зоны прокрутки -->
+                         <div class="instruction-pagination">
+                            <button id="instruction-prev-btn" disabled>&lt; Предыдущая</button>
+                            <span id="instruction-page-info">Страница 0 / 0</span>
+                            <button id="instruction-next-btn" disabled>Следующая &gt;</button>
+                        </div>
                     </div>
-                    <ul class="btns_page" id="btns_page">
-                        <li>
-                            <button id="prev-btn" class="btn_page">
-                                Предыдущая
-                            </button>
-                        </li>
-                        <li>
-                            <button id="next-btn" class="btn_page">
-                                Следующая
-                            </button>
-                        </li>
-                    </ul>
-                    <a
-                        class="instruction_link"
-                        id="instruction_link"
-                        href="./instruction.html" target="_blank"
-                        >Инструкция</a
-                    >
                 </div>
             </div>
         </main>
@@ -210,6 +212,7 @@
         </footer>
 
         <!-- JS PART -->
+        <script src="instruction_parser.js"></script>
         <script src="./node_modules/mathjs/lib/browser/math.js"></script>
         <script src="./JavaScript/buttons.js"></script>
         <script src="./JavaScript/logic.js"></script>

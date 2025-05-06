@@ -291,3 +291,216 @@ footer {
     bottom: 10px;
     margin: 0 45%;
 }
+
+/* --- Стили для новой инструкции --- */
+
+.instruction-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%; /* Занимает всю высоту .container_item.right */
+}
+
+.instruction-tabs {
+    display: flex;
+    margin-bottom: 10px;
+}
+
+.tab-button {
+    padding: 8px 15px;
+    margin-right: 5px;
+    border: 1px solid #555;
+    background-color: #333;
+    color: #ccc;
+    cursor: pointer;
+    border-bottom: none; /* Убираем нижнюю границу для неактивных */
+    border-radius: 5px 5px 0 0;
+    transition: background-color 0.2s;
+}
+
+.tab-button:hover {
+    background-color: #444;
+}
+
+.tab-button.active {
+    background-color: #4a4a4a; /* Цвет фона активной вкладки */
+    color: #fff;
+    border-bottom: 1px solid #4a4a4a; /* Псевдо-слияние с контейнером */
+    position: relative;
+    top: 1px; /* Немного опускаем, чтобы граница совпала */
+}
+
+.instruction-content-area {
+    flex-grow: 1; /* Занимает оставшееся место */
+    min-height: 0; /* Важно для flex-grow с overflow */
+    border: 1px solid #555;
+    padding: 15px;
+    overflow-y: auto; /* Вертикальная прокрутка при необходимости */
+    overflow-x: hidden; /* !!! Убираем горизонтальный скролл !!! */
+    background-color: #2f2f2f; /* Немного другой фон для области контента */
+    /* max-height Убрал, flex-grow должен справиться */
+    border-radius: 0 0 5px 5px; 
+    margin-bottom: 10px; 
+}
+
+.tab-content {
+    display: none; /* Скрываем все вкладки по умолчанию */
+}
+
+.tab-content.active {
+    display: block; /* Показываем активную вкладку */
+}
+
+/* Стилизация контента внутри */
+.instruction-content-area h2, 
+.instruction-content-area h3, 
+.instruction-content-area h4 {
+    margin-top: 1.2em; /* Чуть больше отступ сверху */
+    margin-bottom: 0.8em;
+    color: #eee;
+    font-weight: 500; /* Сделаем заголовки чуть жирнее */
+}
+
+.instruction-content-area p,
+.instruction-content-area ul,
+.instruction-content-area ol {
+    margin-bottom: 1em; /* Используем em для отступов */
+    line-height: 1.6;
+}
+
+.instruction-content-area ul,
+.instruction-content-area ol {
+    margin-left: 25px;
+}
+
+.instruction-content-area li {
+    margin-bottom: 5px;
+}
+
+/* Стилизация изображений (общая) */
+.instruction-content-area img {
+    max-width: 100%; /* !!! Гарантируем вписывание в ширину контейнера !!! */
+    height: auto;     /* !!! Сохраняем пропорции !!! */
+    display: block;   /* !!! Делаем блочным для нормального margin auto !!! */
+    margin: 1em auto; /* Центрируем */
+    /* Убираем vertical-align и display:inline-block из общих стилей */
+}
+
+/* Стили для больших изображений-иллюстраций (если они единственное содержимое параграфа) */
+/* Это правило пока уберем, базового max-width: 100% должно хватить */
+/*
+.instruction-content-area p > img:only-child {
+    display: block; 
+    margin-left: auto;
+    margin-right: auto; 
+}
+*/
+
+/* Отдельно для маленьких картинок-кнопок (предполагаем, что они в папке images/) */
+/* Пока убираем, так как будем переписывать контент и контролировать img явно */
+/*
+.instruction-content-area img[src^="images/"] 
+{
+    display: inline-block !important; 
+    vertical-align: middle; 
+    height: 23px; 
+    width: auto; 
+    max-width: 40px; 
+    margin: 0 3px !important; 
+    padding: 2px;
+    border: 1px solid #666;
+    background-color: #ddd;
+    border-radius: 3px;
+    box-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+}
+*/
+
+/* Стилизация пагинации */
+.instruction-pagination {
+    flex-shrink: 0; /* Пагинация не должна сжиматься */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid #555;
+}
+
+.instruction-pagination button {
+    padding: 5px 10px;
+    background-color: #555;
+    color: #eee;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.instruction-pagination button:hover:not(:disabled) {
+    background-color: #666;
+}
+
+.instruction-pagination button:disabled {
+    background-color: #444;
+    color: #888;
+    cursor: not-allowed;
+}
+
+.instruction-pagination span {
+    font-size: 0.9em;
+    color: #bbb;
+}
+
+/* Стили для "рисованных" кнопок в тексте */
+.inline-button {
+    display: inline-block;
+    padding: 1px 5px;
+    margin: 0 2px;
+    border: 1px solid #777;
+    background-color: #555; /* Темнее основного фона кнопки */
+    color: #eee;
+    border-radius: 3px;
+    font-family: monospace; /* Моноширинный шрифт для кнопок */
+    font-size: 0.9em;
+    line-height: 1.2; /* Чтобы не раздвигать строки */
+    text-align: center;
+    min-width: 1em; /* Минимальная ширина для одиночных символов */
+    box-shadow: inset 0 -1px 1px rgba(0,0,0,0.3); /* Небольшая тень внутрь */
+    vertical-align: baseline; /* Выравнивание по базовой линии текста */
+}
+
+/* Стили для таблиц в инструкции (УДАЛЕНО) */
+/*
+.instruction-table {
+    width: 100%;
+    margin: 1em 0;
+    border-collapse: collapse;
+    border: 1px solid #555;
+}
+
+.instruction-table th,
+.instruction-table td {
+    border: 1px solid #555;
+    padding: 6px 8px;
+    text-align: left;
+    vertical-align: top;
+}
+
+.instruction-table th {
+    background-color: #444;
+    color: #eee;
+    font-weight: bold;
+}
+
+.instruction-table tr:nth-child(even) {
+    background-color: #383838; 
+}
+
+.instruction-table td:first-child {
+}
+
+.instruction-table .inline-button {
+    font-size: 0.85em; 
+    padding: 1px 4px;
+}
+*/
+
+/* --- Конец стилей для новой инструкции --- */
