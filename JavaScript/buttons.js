@@ -213,7 +213,7 @@ function updateScreen() {
     
     screenText.classList.remove('off');
     
-    const formattedValue = formatNumberAuto(displayValue || '0');
+    const formattedValue = formatNumberAuto(displayValue || currentInput || '0');
     
     if (formattedValue.startsWith('-')) {
         screenText.classList.add('negative-shift');
@@ -246,8 +246,11 @@ function updateScreen() {
  * Очистка калькулятора
  */
 function clearAll() {
+    // Сначала сбрасываем ошибку
+    hasError = false;
+    
     displayValue = '0';
-    currentInput = '0';
+    currentInput = '';
     operator = null;
     previousInput = '';
     memoryRegisterX = 0;
@@ -268,7 +271,12 @@ function clearAll() {
     quadraticCoeffBuffer = [];
     quadraticRoots = [];
     quadraticRootIndex = 0;
-    hasError = false;
+    
+    // Сбрасываем дополнительные переменные
+    arcFlag = 0;
+    zapCounter = 0;
+    schCounter = 0;
+    memoryRegisterX = 0;
     
     try {
         console.log('Калькулятор очищен');
@@ -287,12 +295,18 @@ function handleInput(value) {
     // Логируем нажатие кнопки
     logButtonPress(value);
     
-    if (hasError) return;
+    // Разрешаем очистку даже при ошибке
+    if (hasError && value !== 'c' && value !== 'cx') return;
     if (!isPowerOn) return;
     
     // Обработка цифр и запятой
     if (/[0-9]/.test(value)) {
-        if (resultMode) return; // Запрет на ввод цифр после функции (sin, √ и т.д.)
+        if (resultMode) {
+            // Очищаем экран и начинаем новое число
+            currentInput = '';
+            displayValue = '0';
+            resultMode = false;
+        }
         if (expectingExponent) {
             // Поддерживаем начальное состояние '00': первая введённая цифра заменяет первый ноль,
             // вторая — второй ноль.
@@ -376,6 +390,8 @@ function handleInput(value) {
             break;
             
         case 'cx':
+            // Очищаем текущий ввод и сбрасываем ошибку
+            hasError = false;
             currentInput = '';
             displayValue = '0';
             updateScreen();
@@ -707,6 +723,7 @@ function handleNegateFunction() {
     }
     
     displayValue = currentInput;
+    resultMode = true; // Запрещаем дописывание цифр после смены знака
     updateScreen();
 }
 
@@ -748,10 +765,14 @@ function handlePFunction() {
         return;
     }
     
-    // Сохраняем первое число для функции P
+    // Сохраняем первое число для функции P (корень из суммы квадратов)
     memoryRegisterX = inputValue;
     currentInput = '';
     displayValue = '0';
+    
+    // Устанавливаем флаг, что ожидаем второе число для вычисления √(x² + y²)
+    isWaitingForPowerExponent = true; // Переиспользуем флаг для P функции
+    
     updateScreen();
 }
 
@@ -771,6 +792,10 @@ function handleYDegreeFunction() {
     powerBase = inputValue;
     currentInput = '';
     displayValue = '0';
+    
+    // Устанавливаем флаг, что ожидаем показатель степени
+    isWaitingForPowerExponent = true;
+    
     updateScreen();
 }
 
@@ -778,7 +803,18 @@ function handleYDegreeFunction() {
  * Обработка записи в память (ЗП)
  */
 function handleZapFunction() {
-    const inputValue = currentInput !== '' ? parseFloat(currentInput.replace(',', '.')) : parseFloat(previousInput.replace(',', '.'));
+    let inputValue;
+    
+    // Приоритет: currentInput, затем previousInput, затем displayValue, затем 0
+    if (currentInput !== '') {
+        inputValue = parseFloat(currentInput.replace(',', '.'));
+    } else if (previousInput !== '') {
+        inputValue = parseFloat(previousInput.replace(',', '.'));
+    } else if (displayValue !== '0' && displayValue !== '') {
+        inputValue = parseFloat(displayValue.replace(',', '.'));
+    } else {
+        inputValue = 0; // Если ничего не введено, сохраняем 0
+    }
     
     if (isNaN(inputValue)) {
         hasError = true;
@@ -809,7 +845,18 @@ function handleVpFunction() {
  * Обработка счёта из памяти (СЧ)
  */
 function handleSchFunction() {
-    const inputValue = currentInput !== '' ? parseFloat(currentInput.replace(',', '.')) : parseFloat(previousInput.replace(',', '.'));
+    let inputValue;
+    
+    // Приоритет: currentInput, затем previousInput, затем displayValue, затем 0
+    if (currentInput !== '') {
+        inputValue = parseFloat(currentInput.replace(',', '.'));
+    } else if (previousInput !== '') {
+        inputValue = parseFloat(previousInput.replace(',', '.'));
+    } else if (displayValue !== '0' && displayValue !== '') {
+        inputValue = parseFloat(displayValue.replace(',', '.'));
+    } else {
+        inputValue = 0; // Если ничего не введено, прибавляем 0
+    }
     
     if (isNaN(inputValue)) {
         hasError = true;
@@ -827,8 +874,8 @@ function handleSchFunction() {
     }
     
     memoryRegisterP = result;
-    currentInput = result.toString().replace('.', ',');
-    displayValue = formatNumberAuto(currentInput);
+    // НЕ очищаем currentInput и previousInput, чтобы при повторном нажатии СЧ прибавлялось то же число
+    displayValue = formatNumberAuto(memoryRegisterP.toString().replace('.', ','));
     console.log(`СЧ: Прибавлено к memoryRegisterP: ${memoryRegisterP}`);
     updateScreen();
 }
@@ -843,39 +890,87 @@ function calculateResult() {
         return;
     }
     
-    // НОВАЯ ЛОГИКА: ОБРАБОТКА y^x
+    // НОВАЯ ЛОГИКА: ОБРАБОТКА y^x и P функции
     if (isWaitingForPowerExponent) {
         const inputValue = currentInput !== '' ? parseFloat(currentInput.replace(',', '.')) : null;
-        if (inputValue !== null && powerBase !== null) {
-            let result;
-            try {
-                // Возведение в степень
-                result = Math.pow(powerBase, inputValue);
-                // Проверка на переполнение
-                if (Math.abs(result) > 9.9999999e99) {
+        
+        // Проверяем, какая функция активна
+        if (powerBase !== null) {
+            // y^x функция
+            if (inputValue !== null) {
+                let result;
+                try {
+                    // Возведение в степень
+                    result = Math.pow(powerBase, inputValue);
+                    // Проверка на переполнение
+                    if (Math.abs(result) > 9.9999999e99) {
+                        hasError = true;
+                        updateScreen();
+                        return;
+                    }
+                    // Проверка на слишком малое число
+                    if (Math.abs(result) < 1e-99 && result !== 0) {
+                        hasError = true;
+                        updateScreen();
+                        return;
+                    }
+                    // Сохраняем результат
+                    currentInput = result.toString().replace('.', ',');
+                    displayValue = formatNumberAuto(currentInput);
+                    // Сбрасываем флаги
+                    isWaitingForPowerExponent = false;
+                    powerBase = null;
+                    updateScreen();
+                } catch (e) {
                     hasError = true;
                     updateScreen();
-                    return;
                 }
-                // Проверка на слишком малое число
-                if (Math.abs(result) < 1e-99 && result !== 0) {
-                    hasError = true;
-                    updateScreen();
-                    return;
-                }
-                // Сохраняем результат
-                currentInput = result.toString().replace('.', ',');
-                displayValue = formatNumberAuto(currentInput);
-                // Сбрасываем флаги
-                isWaitingForPowerExponent = false;
-                powerBase = null;
+            } else {
+                // Если не ввели показатель степени
+                hasError = true;
                 updateScreen();
-            } catch (e) {
+            }
+        } else if (memoryRegisterX !== 0) {
+            // P функция (корень из суммы квадратов)
+            if (inputValue !== null) {
+                let result;
+                try {
+                    // Вычисляем √(x² + y²)
+                    const x = memoryRegisterX;
+                    const y = inputValue;
+                    result = Math.sqrt(x * x + y * y);
+                    
+                    // Проверка на переполнение
+                    if (Math.abs(result) > 9.9999999e99) {
+                        hasError = true;
+                        updateScreen();
+                        return;
+                    }
+                    // Проверка на слишком малое число
+                    if (Math.abs(result) < 1e-99 && result !== 0) {
+                        hasError = true;
+                        updateScreen();
+                        return;
+                    }
+                    
+                    // Сохраняем результат
+                    currentInput = result.toString().replace('.', ',');
+                    displayValue = formatNumberAuto(currentInput);
+                    // Сбрасываем флаги
+                    isWaitingForPowerExponent = false;
+                    memoryRegisterX = 0;
+                    updateScreen();
+                } catch (e) {
+                    hasError = true;
+                    updateScreen();
+                }
+            } else {
+                // Если не ввели второе число для P функции
                 hasError = true;
                 updateScreen();
             }
         } else {
-            // Если не ввели показатель степени или не было основания
+            // Если не ввели основание или первое число
             hasError = true;
             updateScreen();
         }
