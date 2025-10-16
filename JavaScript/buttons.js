@@ -118,17 +118,17 @@ function checkOverflow(number) {
  * @returns {string} - Отформатированное число
  */
 function formatNumberAuto(number) {
-    if (hasError) return '-'.repeat(9);
+    if (hasError) return '·'.repeat(15); // 15 точек для переполнения
     let formatted = number.toString().replace('.', ',');
     // Проверка на переполнение
     const absValue = Math.abs(parseFloat(formatted.replace(',', '.')));
     if (absValue > 9.9999999e99 || isNaN(absValue)) {
         hasError = true;
-        return '-'.repeat(9);
+        return '·'.repeat(15); // 15 точек для переполнения
     }
     // Проверка на слишком малое число
     if (absValue < 1e-99 && absValue !== 0) {
-        return '0';
+        return '0'.padStart(11, ' '); // Всегда 11 символов
     }
 
     // --- Режим восьмиразрядной мантиссы ---
@@ -143,7 +143,7 @@ function formatNumberAuto(number) {
         const digitsToUse = mantissaBody.slice(0, 8);
 
         let mantissaFormatted = mantissaSign + digitsToUse[0] + ',' + digitsToUse.slice(1);
-        return mantissaFormatted;
+        return mantissaFormatted.padStart(11, ' '); // Всегда 11 символов
     }
 
     // --- Естественная форма (без e) ---
@@ -153,41 +153,67 @@ function formatNumberAuto(number) {
         const parts = numberPart.split(',');
         let integerPart = parts[0];
         let decimalPart = parts[1] || '';
-        const combined = integerPart + decimalPart;
-        const trimmed = combined.slice(0, 8);
-        integerPart = trimmed.slice(0, integerPart.length);
-        decimalPart = trimmed.slice(integerPart.length);
+        
+        // Обрезаем незначащие нули в конце дробной части
+        decimalPart = decimalPart.replace(/0+$/, '');
+        
         let result = `${sign}${integerPart}`;
-        if (parts.length > 1) result += ',' + decimalPart;
-        return result;
+        // Добавляем запятую только если есть дробная часть
+        if (decimalPart.length > 0) {
+            result += ',' + decimalPart;
+        } else {
+            result += ','; // Всегда показываем запятую
+        }
+        
+        // Ограничиваем длину до 11 символов
+        if (result.length > 11) {
+            result = result.slice(0, 11);
+        }
+        
+        return result.padStart(11, ' '); // Всегда 11 символов для естественной формы
     }
 
-    // --- Экспоненциальная форма: мантисса 5 цифр ---
-    const [mantissaStrRaw] = formatted.split(/e/i);
+    // --- Экспоненциальная форма: мантисса 8 символов + пробел + порядок 3 символа = 11 символов + 3 символа = 14 символов ---
+    const parts = formatted.split(/e/i);
+    const mantissaStrRaw = parts[0];
+    const exponentStrRaw = parts[1] || '';
 
     const mantissaSign = mantissaStrRaw.startsWith('-') ? '-' : '';
     let mantissaBody = mantissaStrRaw.replace('-', '').replace(',', '');
 
-    while (mantissaBody.length < 5) {
+    // Дополняем мантиссу до 9 разрядов (1 цифра + 8 цифр после запятой)
+    while (mantissaBody.length < 9) {
         mantissaBody += '0';
     }
-    const mantissaDigits = mantissaBody.slice(0, 5);
+    const mantissaDigits = mantissaBody.slice(0, 9);
 
+    // Форматируем мантиссу: знак + 1 цифра + запятая + 8 цифр = 10 символов
     const mantissaFormatted = mantissaSign + mantissaDigits[0] + ',' + mantissaDigits.slice(1);
 
-    // --- порядок: используем только глобальные exponentSign и exponentDigits ---
-    let expDigits = exponentDigits;
-    if (!expDigits || expDigits.length === 0) expDigits = '00';
-    expDigits = expDigits.padStart(2, '0');
-
-    let expPart;
-    if (exponentSign === '-') {
-        expPart = '-' + expDigits;
+    // --- порядок: извлекаем из строки или используем глобальные переменные ---
+    let expDigits, expSign;
+    
+    if (exponentStrRaw) {
+        // Если порядок есть в строке (например, "555e-55")
+        expSign = exponentStrRaw.startsWith('-') ? '-' : '+';
+        expDigits = exponentStrRaw.replace(/^[+-]/, '').padStart(2, '0');
     } else {
-        expPart = ' ' + expDigits; // пробел для положительного
+        // Используем глобальные переменные (режим ВП)
+        expSign = exponentSign;
+        expDigits = exponentDigits || '00';
+        expDigits = expDigits.padStart(2, '0');
     }
 
-    return `${mantissaFormatted}${expPart}`;
+    // Форматируем порядок: 1 цифра + знак + 1 цифра = 3 символа
+    let expPart;
+    if (expSign === '-') {
+        expPart = '0-' + expDigits.slice(0, 1); // например "0-8"
+    } else {
+        expPart = '0+' + expDigits.slice(0, 1); // например "0+8"
+    }
+
+    const result = `${mantissaFormatted} ${expPart}`;
+    return result; // Всегда 14 символов (11 + 3)
 }
 
 /**
@@ -206,7 +232,7 @@ function updateScreen() {
     }
     
     if (hasError) {
-        screenText.textContent = '-'.repeat(9);
+        screenText.textContent = '·'.repeat(15); // 15 точек для переполнения
         screenText.classList.add('negative-shift');
         return;
     }
@@ -299,6 +325,21 @@ function handleInput(value) {
     if (hasError && value !== 'c' && value !== 'cx') return;
     if (!isPowerOn) return;
     
+    // Обработка negate в режиме ВП (должна быть в начале)
+    if (value === 'negate' && expectingExponent) {
+        // Если мы в режиме ввода порядка — переключаем ТОЛЬКО знак порядка
+        exponentSign = (exponentSign === '-') ? '+' : '-';
+
+        const baseNum = currentInput.replace(',', '.');
+        const expPart = (exponentDigits === '' ? '00' : exponentDigits.padStart(2, '0'));
+
+        const tempInput = `${baseNum}e${exponentSign}${expPart}`;
+
+        displayValue = formatNumberAuto(tempInput);
+        updateScreen();
+        return; // выходим, чтобы не обработать как обычный negate
+    }
+    
     // Обработка цифр и запятой
     if (/[0-9]/.test(value)) {
         if (resultMode) {
@@ -315,12 +356,12 @@ function handleInput(value) {
             } else if (exponentDigits.length === 1) {
                 exponentDigits += value;
             } else {
-                // Если уже две цифры — игнорируем лишние нажатия
+                // Если уже две цифры — игнорируем лишние нажатия цифр
                 return;
             }
 
             // Для промежуточного отображения: если ещё не ввели цифры — показываем "00"
-            const displayExp = (exponentDigits === '' ? '00' : exponentDigits.padEnd(2, '0'));
+            const displayExp = (exponentDigits === '' ? '00' : exponentDigits.padStart(2, '0'));
 
             const baseNum = currentInput.replace(',', '.');
             const tempInput = `${baseNum}e${exponentSign}${displayExp}`;
@@ -328,11 +369,14 @@ function handleInput(value) {
             displayValue = formatNumberAuto(tempInput);
             updateScreen();
 
-            // Если ввели 2 цифры — фиксируем экспоненту в currentInput и выходим из режима ввода порядка
+            // Если ввели 2 цифры — фиксируем экспоненту, но остаемся в режиме ВП для смены знака
             if (exponentDigits.length === 2) {
-                currentInput = `${baseNum}e${exponentSign}${exponentDigits}`;
-                expectingExponent = false;
-                displayValue = formatNumberAuto(currentInput);
+                // НЕ изменяем currentInput здесь, оставляем исходное число
+                // currentInput остается как исходное число (например, "8")
+                // НЕ сбрасываем expectingExponent - остаемся в режиме ВП для смены знака порядка
+                // Создаем экспоненциальную форму только для отображения
+                const finalInput = `${baseNum}e${exponentSign}${exponentDigits}`;
+                displayValue = formatNumberAuto(finalInput);
                 updateScreen();
             }
 
@@ -356,18 +400,45 @@ function handleInput(value) {
     
     // Обработка запятой
     if (value === ',') {
-        if (!currentInput.includes(',')) {
-            currentInput += currentInput === '' ? '0,' : ','; // Добавляем '0,' если ввод пуст, иначе ','
-            resultMode = false;
-            expectingExponent = false; // Сбрасываем при вводе запятой
-            displayValue = currentInput; // Присваиваем displayValue значение currentInput
-            updateScreen();            // Вызываем обновление дисплейного значения
+        if (expectingExponent) {
+            // В режиме ВП запятая добавляется к мантиссе
+            if (!currentInput.includes(',')) {
+                currentInput += currentInput === '' ? '0,' : ',';
+                resultMode = false;
+                // НЕ сбрасываем expectingExponent - остаемся в режиме ВП
+                
+                // Обновляем отображение с новой мантиссой
+                const baseNum = currentInput.replace(',', '.');
+                const expPart = (exponentDigits === '' ? '00' : exponentDigits.padStart(2, '0'));
+                const tempInput = `${baseNum}e${exponentSign}${expPart}`;
+                displayValue = formatNumberAuto(tempInput);
+                updateScreen();
+            }
+        } else {
+            // Обычный режим
+            if (!currentInput.includes(',')) {
+                currentInput += currentInput === '' ? '0,' : ','; // Добавляем '0,' если ввод пуст, иначе ','
+                resultMode = false;
+                displayValue = currentInput; // Присваиваем displayValue значение currentInput
+                updateScreen();            // Вызываем обновление дисплейного значения
+            }
         }
         return;
     }
     
     // Обработка операторов
     if (['+', '-', '*', '/'].includes(value)) {
+        // Сбрасываем режим ВП при нажатии оператора, но сохраняем экспоненциальную форму
+        if (expectingExponent) {
+            // Сохраняем экспоненциальную форму в currentInput перед сбросом режима
+            const baseNum = currentInput.replace(',', '.');
+            const expPart = (exponentDigits === '' ? '00' : exponentDigits.padStart(2, '0'));
+            currentInput = `${baseNum}e${exponentSign}${expPart}`;
+            
+            expectingExponent = false;
+            exponentSign = '';
+            exponentDigits = '';
+        }
         handleOperation(value);
         return;
     }
@@ -381,6 +452,27 @@ function handleInput(value) {
     if (value === ')') {
         endBracket();
         return;
+    }
+    
+    // Обработка ВП (ввод порядка) - научная форма
+    if (value === 'vp') {
+        if (currentInput !== '') {
+            // Входим в режим ввода порядка: по умолчанию показываем два нуля в порядке
+            expectingExponent = true;
+            exponentSign = '+';     // всегда храним явный знак (положительный)
+            exponentDigits = '';    // пока пусто, но на экране будем рисовать "00"
+
+            // Для отображения используем временную строку, не меняя currentInput пока пользователь вводит порядок
+            const baseNum = currentInput.replace(',', '.');
+            const tempInput = `${baseNum}e${exponentSign}00`; // всегда "00" в начале
+            displayValue = formatNumberAuto(tempInput);
+            updateScreen();
+        } else {
+            // Нечего переводить в экспоненту — ошибка
+            hasError = true;
+            updateScreen();
+        }
+        return; // выходим, чтобы не обработать это как обычный ввод
     }
     
     // Обработка специальных функций
@@ -429,6 +521,7 @@ function handleInput(value) {
             break;
             
         case 'negate':
+            // Обычная смена знака мантиссы (обработка в режиме ВП уже сделана выше)
             handleNegateFunction();
             break;
             
@@ -457,6 +550,17 @@ function handleInput(value) {
             break;
             
         case '=':
+            // Сбрасываем режим ВП при нажатии равно, но сохраняем экспоненциальную форму
+            if (expectingExponent) {
+                // Сохраняем экспоненциальную форму в currentInput перед сбросом режима
+                const baseNum = currentInput.replace(',', '.');
+                const expPart = (exponentDigits === '' ? '00' : exponentDigits.padStart(2, '0'));
+                currentInput = `${baseNum}e${exponentSign}${expPart}`;
+                
+                expectingExponent = false;
+                exponentSign = '';
+                exponentDigits = '';
+            }
             calculateResult();
             break;
             
@@ -534,7 +638,7 @@ function isOperation(operation) {
  * @param {string} op - Оператор
  */
 function handleOperation(op) {
-    const inputValue = currentInput !== '' ? parseFloat(currentInput) : null;
+    const inputValue = currentInput !== '' ? parseFloat(currentInput.replace(',', '.')) : null;
     
     if (inputValue !== null) {
         if (operator !== null) {
@@ -618,7 +722,15 @@ function handleTrigFunction(func) {
         return;
     }
     
-    currentInput = result.toString().replace('.', ',');
+    // Сохраняем результат в правильном формате
+    if (Math.abs(result) >= 1e10 || (Math.abs(result) < 1e-10 && result !== 0)) {
+        // Для больших или очень маленьких чисел используем экспоненциальную форму
+        currentInput = result.toExponential().replace('.', ',');
+    } else {
+        // Для обычных чисел используем обычную форму
+        currentInput = result.toString().replace('.', ',');
+    }
+    
     displayValue = formatNumberAuto(currentInput);
     resultMode = true;
     updateScreen();
@@ -629,7 +741,7 @@ function handleTrigFunction(func) {
  * @param {string} func - Функция (lg, ln)
  */
 function handleLogFunction(func) {
-    const inputValue = currentInput !== '' ? parseFloat(currentInput) : parseFloat(previousInput);
+    const inputValue = currentInput !== '' ? parseFloat(currentInput.replace(',', '.')) : parseFloat(previousInput.replace(',', '.'));
     
     if (isNaN(inputValue) || inputValue <= 0) {
         hasError = true;
@@ -660,7 +772,7 @@ function handleLogFunction(func) {
  * Обработка квадратного корня
  */
 function handleSqrtFunction() {
-    const inputValue = currentInput !== '' ? parseFloat(currentInput) : parseFloat(previousInput);
+    const inputValue = currentInput !== '' ? parseFloat(currentInput.replace(',', '.')) : parseFloat(previousInput.replace(',', '.'));
     
     if (isNaN(inputValue) || inputValue < 0) {
         hasError = true;
@@ -686,7 +798,7 @@ function handleSqrtFunction() {
  * Обработка обратного числа (1/x)
  */
 function handleReverseFunction() {
-    const inputValue = currentInput !== '' ? parseFloat(currentInput) : parseFloat(previousInput);
+    const inputValue = currentInput !== '' ? parseFloat(currentInput.replace(',', '.')) : parseFloat(previousInput.replace(',', '.'));
     
     if (isNaN(inputValue) || inputValue === 0) {
         hasError = true;
@@ -731,7 +843,7 @@ function handleNegateFunction() {
  * Обработка экспоненты (e^x)
  */
 function handleExpFunction() {
-    const inputValue = currentInput !== '' ? parseFloat(currentInput) : parseFloat(previousInput);
+    const inputValue = currentInput !== '' ? parseFloat(currentInput.replace(',', '.')) : parseFloat(previousInput.replace(',', '.'));
     
     if (isNaN(inputValue)) {
         hasError = true;
@@ -832,7 +944,15 @@ function handleZapFunction() {
  */
 function handleVpFunction() {
     if (memoryRegisterP !== 0) {
-        currentInput = memoryRegisterP.toString().replace('.', ',');
+        // Сохраняем результат в правильном формате
+        if (Math.abs(memoryRegisterP) >= 1e10 || (Math.abs(memoryRegisterP) < 1e-10 && memoryRegisterP !== 0)) {
+            // Для больших или очень маленьких чисел используем экспоненциальную форму
+            currentInput = memoryRegisterP.toExponential().replace('.', ',');
+        } else {
+            // Для обычных чисел используем обычную форму
+            currentInput = memoryRegisterP.toString().replace('.', ',');
+        }
+        
         displayValue = formatNumberAuto(currentInput);
         console.log(`ВП: Вызвано из memoryRegisterP: ${memoryRegisterP}`);
         updateScreen();
@@ -875,7 +995,18 @@ function handleSchFunction() {
     
     memoryRegisterP = result;
     // НЕ очищаем currentInput и previousInput, чтобы при повторном нажатии СЧ прибавлялось то же число
-    displayValue = formatNumberAuto(memoryRegisterP.toString().replace('.', ','));
+    
+    // Форматируем результат для отображения
+    let formattedResult;
+    if (Math.abs(memoryRegisterP) >= 1e10 || (Math.abs(memoryRegisterP) < 1e-10 && memoryRegisterP !== 0)) {
+        // Для больших или очень маленьких чисел используем экспоненциальную форму
+        formattedResult = memoryRegisterP.toExponential().replace('.', ',');
+    } else {
+        // Для обычных чисел используем обычную форму
+        formattedResult = memoryRegisterP.toString().replace('.', ',');
+    }
+    
+    displayValue = formatNumberAuto(formattedResult);
     console.log(`СЧ: Прибавлено к memoryRegisterP: ${memoryRegisterP}`);
     updateScreen();
 }
@@ -914,8 +1045,15 @@ function calculateResult() {
                         updateScreen();
                         return;
                     }
-                    // Сохраняем результат
-                    currentInput = result.toString().replace('.', ',');
+                    // Сохраняем результат в правильном формате
+                    if (Math.abs(result) >= 1e10 || (Math.abs(result) < 1e-10 && result !== 0)) {
+                        // Для больших или очень маленьких чисел используем экспоненциальную форму
+                        currentInput = result.toExponential().replace('.', ',');
+                    } else {
+                        // Для обычных чисел используем обычную форму
+                        currentInput = result.toString().replace('.', ',');
+                    }
+                    
                     displayValue = formatNumberAuto(currentInput);
                     // Сбрасываем флаги
                     isWaitingForPowerExponent = false;
@@ -953,8 +1091,15 @@ function calculateResult() {
                         return;
                     }
                     
-                    // Сохраняем результат
-                    currentInput = result.toString().replace('.', ',');
+                    // Сохраняем результат в правильном формате
+                    if (Math.abs(result) >= 1e10 || (Math.abs(result) < 1e-10 && result !== 0)) {
+                        // Для больших или очень маленьких чисел используем экспоненциальную форму
+                        currentInput = result.toExponential().replace('.', ',');
+                    } else {
+                        // Для обычных чисел используем обычную форму
+                        currentInput = result.toString().replace('.', ',');
+                    }
+                    
                     displayValue = formatNumberAuto(currentInput);
                     // Сбрасываем флаги
                     isWaitingForPowerExponent = false;
@@ -1011,6 +1156,16 @@ function calculateResult() {
             return;
         }
         
+        // Проверка на "практически равные" числа для экспоненциальных операций
+        // Если результат очень близок к одному из операндов, используем исходный формат
+        if (Math.abs(result - prevValue) < Math.abs(prevValue) * 1e-10) {
+            // Результат практически равен первому операнду - сохраняем его формат
+            currentInput = previousInput;
+            displayValue = formatNumberAuto(currentInput);
+            updateScreen();
+            return;
+        }
+        
         // Обработка специальных флагов
         if (memoryRegisterX !== 0) {
             // Функция P: sqrt(x^2 + y^2)
@@ -1033,7 +1188,16 @@ function calculateResult() {
         lastOperator = operator;
         operator = null;
         previousInput = '';
-        currentInput = result.toString().replace('.', ',');
+        
+        // Сохраняем результат в правильном формате
+        if (Math.abs(result) >= 1e10 || (Math.abs(result) < 1e-10 && result !== 0)) {
+            // Для больших или очень маленьких чисел используем экспоненциальную форму
+            currentInput = result.toExponential().replace('.', ',');
+        } else {
+            // Для обычных чисел используем обычную форму
+            currentInput = result.toString().replace('.', ',');
+        }
+        
         displayValue = formatNumberAuto(currentInput);
         updateScreen();
     } else if (lastOperator !== null && lastOperand !== null && lastOperand2 !== null && inputValue !== null) {
@@ -1058,11 +1222,30 @@ function calculateResult() {
             updateScreen();
             return;
         }
+        
+        // Проверка на "практически равные" числа для экспоненциальных операций
+        // Если результат очень близок к текущему значению, сохраняем его формат
+        if (Math.abs(result - inputValue) < Math.abs(inputValue) * 1e-10) {
+            // Результат практически равен текущему значению - сохраняем его формат
+            displayValue = formatNumberAuto(currentInput);
+            updateScreen();
+            return;
+        }
+        
         // CORRECTED REPEAT LOGIC: Обновляем lastOperand для следующего повтора, lastOperand2 остаётся
         lastOperand = result;
         // lastOperand2 не меняется, используется снова
         // lastOperator остаётся тем же
-        currentInput = result.toString().replace('.', ',');
+        
+        // Сохраняем результат в правильном формате
+        if (Math.abs(result) >= 1e10 || (Math.abs(result) < 1e-10 && result !== 0)) {
+            // Для больших или очень маленьких чисел используем экспоненциальную форму
+            currentInput = result.toExponential().replace('.', ',');
+        } else {
+            // Для обычных чисел используем обычную форму
+            currentInput = result.toString().replace('.', ',');
+        }
+        
         displayValue = formatNumberAuto(currentInput);
         updateScreen();
     } else if (inputValue !== null) {
@@ -1103,7 +1286,7 @@ document.addEventListener('DOMContentLoaded', function() {
     addEventListenerIfExists("btn_8", "click", () => handleInput("8"));
     addEventListenerIfExists("btn_9", "click", () => handleInput("9"));
     addEventListenerIfExists("btn_clear", "click", () => handleInput("c"));
-    addEventListenerIfExists("btn_dot", "click", () => handleInput("."));
+    addEventListenerIfExists("btn_dot", "click", () => handleInput(","));
     addEventListenerIfExists("btn_plus", "click", () => handleInput("+"));
     addEventListenerIfExists("btn_minus", "click", () => handleInput("-"));
     addEventListenerIfExists("btn_multiply", "click", () => handleInput("*"));
@@ -1495,6 +1678,122 @@ document.addEventListener('DOMContentLoaded', function() {
         window.simulateKeyPresses("3 0 arc sin + 4 5 arc cos =");
         
         console.log("=== КОНЕЦ ТЕСТА ИСПРАВЛЕННОЙ ЛОГИКИ ARC ===");
+    };
+    
+    /**
+     * Функция для тестирования исправлений дисплея
+     */
+    window.testDisplayFixes = function() {
+        console.log("=== ТЕСТ ИСПРАВЛЕНИЙ ДИСПЛЕЯ ===");
+        
+        // Тест 1: Проверка работы запятой
+        clearAll();
+        console.log("\nТест 1: Ввод запятой");
+        window.simulateKeyPresses("3 , 7 0 0 0 0 0");
+        console.log("Результат:", screenText.textContent);
+        console.log("Длина:", screenText.textContent.length);
+        console.log("Ожидается: 3,700000 (15 символов)");
+        
+        // Тест 2: Проверка обрезания незначащих нулей
+        clearAll();
+        console.log("\nТест 2: Обрезание незначащих нулей");
+        window.simulateKeyPresses("3 , 7 0 0 0 0 0");
+        console.log("Результат:", screenText.textContent);
+        console.log("Длина:", screenText.textContent.length);
+        console.log("Ожидается: 3,7 (15 символов)");
+        
+        // Тест 2.1: Проверка сохранения значащих нулей
+        clearAll();
+        console.log("\nТест 2.1: Сохранение значащих нулей");
+        window.simulateKeyPresses("3 , 7 0 0 0 0 3");
+        console.log("Результат:", screenText.textContent);
+        console.log("Длина:", screenText.textContent.length);
+        console.log("Ожидается: 3,700003 (15 символов)");
+        
+        // Тест 3: Проверка переполнения (точки вместо дефисов)
+        clearAll();
+        console.log("\nТест 3: Переполнение");
+        currentInput = "1e100"; // Очень большое число
+        updateScreen();
+        console.log("Результат переполнения:", screenText.textContent);
+        console.log("Длина:", screenText.textContent.length);
+        console.log("Ожидается: точки ··············· (15 символов)");
+        
+        // Тест 4: Проверка экспоненциальной формы (10+3=13 символов)
+        clearAll();
+        console.log("\nТест 4: Экспоненциальная форма");
+        currentInput = "3.141592653e53";
+        displayValue = formatNumberAuto(currentInput);
+        updateScreen();
+        console.log("Результат экспоненциальной формы:", screenText.textContent);
+        console.log("Длина:", screenText.textContent.length);
+        console.log("Ожидается: 3,141592653 53 (15 символов)");
+        
+        // Тест 5: Проверка простого числа с запятой
+        clearAll();
+        console.log("\nТест 5: Простое число с запятой");
+        window.simulateKeyPresses("1 2 3 ,");
+        console.log("Результат:", screenText.textContent);
+        console.log("Длина:", screenText.textContent.length);
+        console.log("Ожидается: 123,000000 (15 символов)");
+        
+        // Тест 6: Проверка целого числа (должна быть запятая)
+        clearAll();
+        console.log("\nТест 6: Целое число");
+        window.simulateKeyPresses("4 5 6");
+        console.log("Результат:", screenText.textContent);
+        console.log("Длина:", screenText.textContent.length);
+        console.log("Ожидается: 456, (15 символов)");
+        
+        // Тест 7: Проверка ВП (ввод порядка) - научная форма
+        clearAll();
+        console.log("\nТест 7: ВП - научная форма");
+        window.simulateKeyPresses("3 , 1 4 1 5 9 2 6 5 3 vp 5 3");
+        console.log("Результат:", screenText.textContent);
+        console.log("Длина:", screenText.textContent.length);
+        console.log("Ожидается: 3,141592653 53 (15 символов)");
+        
+        // Тест 8: Проверка ВП с отрицательным порядком
+        clearAll();
+        console.log("\nТест 8: ВП с отрицательным порядком");
+        window.simulateKeyPresses("1 , 2 3 4 5 6 7 8 9 0 vp negate 1 2");
+        console.log("Результат:", screenText.textContent);
+        console.log("Длина:", screenText.textContent.length);
+        console.log("Ожидается: 1,234567890-12 (15 символов)");
+        
+        // Тест 9: Проверка смены знака порядка после ввода цифр
+        clearAll();
+        console.log("\nТест 9: Смена знака порядка после ввода цифр");
+        window.simulateKeyPresses("8 vp 2 5 negate");
+        console.log("Результат:", screenText.textContent);
+        console.log("Длина:", screenText.textContent.length);
+        console.log("Ожидается: 8,000000000-25 (15 символов)");
+        console.log("Проверяем, что currentInput остался '8', а не изменился на экспоненциальную форму");
+        
+        // Тест 9.1: Проверка повторного нажатия negate
+        console.log("\nТест 9.1: Повторное нажатие negate");
+        window.simulateKeyPresses("negate");
+        console.log("Результат:", screenText.textContent);
+        console.log("Длина:", screenText.textContent.length);
+        console.log("Ожидается: 8,000000000 25 (15 символов) - знак порядка снова +");
+        
+        // Тест 10: Проверка выхода из режима ВП при нажатии оператора
+        clearAll();
+        console.log("\nТест 10: Выход из режима ВП при нажатии оператора");
+        window.simulateKeyPresses("5 5 5 vp 8 5 - 8");
+        console.log("Результат:", screenText.textContent);
+        console.log("Длина:", screenText.textContent.length);
+        console.log("Ожидается: результат вычисления 5,550000000-85 - 8");
+        console.log("Проверяем, что экспоненциальная форма сохранилась при выходе из режима ВП");
+        
+        // Тест 11: Проверка сохранения экспоненциальной формы при операциях
+        clearAll();
+        console.log("\nТест 11: Сохранение экспоненциальной формы при операциях");
+        window.simulateKeyPresses("5 5 5 vp 5 2 negate - 2 =");
+        console.log("Результат:", screenText.textContent);
+        console.log("Длина:", screenText.textContent.length);
+        console.log("Ожидается: результат вычисления 5,550000000-52 - 2");
+        console.log("Проверяем, что экспоненциальная форма сохранилась и вычисления работают правильно");
     };
 });
 
