@@ -24,6 +24,7 @@ let lastOperand2 = null; // ВОССТАНАВЛИВАЕМ ДЛЯ ПОВТОРА
 let expectingExponent = false; // true, если ожидаем ввод порядка после ВП
 let exponentSign = '';         // '+' или '-'
 let exponentDigits = '';       // две цифры порядка
+let isVPFormatted = false;     // true, если число в VP формате (для отображения степеней)
 
 // НОВАЯ ЛОГИКА: Возведение в степень (y^x)
 let powerBase = null; // Основание y для y^x
@@ -181,13 +182,13 @@ function formatNumberAuto(number) {
     const mantissaSign = mantissaStrRaw.startsWith('-') ? '-' : '';
     let mantissaBody = mantissaStrRaw.replace('-', '').replace(',', '');
 
-    // Дополняем мантиссу до 9 разрядов (1 цифра + 8 цифр после запятой)
-    while (mantissaBody.length < 9) {
-        mantissaBody += '0';
+    // Дополняем мантиссу до 11 символов (1 цифра + запятая + 9 символов после запятой)
+    while (mantissaBody.length < 11) {
+        mantissaBody += ' ';
     }
-    const mantissaDigits = mantissaBody.slice(0, 9);
+    const mantissaDigits = mantissaBody.slice(0, 11);
 
-    // Форматируем мантиссу: знак + 1 цифра + запятая + 8 цифр = 10 символов
+    // Форматируем мантиссу: знак + 1 цифра + запятая + 9 символов = 11 символов
     const mantissaFormatted = mantissaSign + mantissaDigits[0] + ',' + mantissaDigits.slice(1);
 
     // --- порядок: извлекаем из строки или используем глобальные переменные ---
@@ -200,20 +201,41 @@ function formatNumberAuto(number) {
     } else {
         // Используем глобальные переменные (режим ВП)
         expSign = exponentSign;
-        expDigits = exponentDigits || '00';
-        expDigits = expDigits.padStart(2, '0');
+        
+        // Если пользователь ввел цифры степеней, используем их
+        if (exponentDigits && exponentDigits !== '') {
+            expDigits = exponentDigits.padStart(2, '0');
+        } else {
+            // Иначе вычисляем реальный порядок степеней для числа
+            const numValue = parseFloat(mantissaStrRaw.replace(',', '.'));
+            if (numValue !== 0) {
+                const realExponent = Math.floor(Math.log10(Math.abs(numValue)));
+                expDigits = Math.abs(realExponent).toString().padStart(2, '0');
+                expSign = realExponent >= 0 ? '+' : '-';
+            } else {
+                expDigits = '00';
+            }
+        }
     }
 
-    // Форматируем порядок: 1 цифра + знак + 1 цифра = 3 символа
+    // Форматируем порядок: знак + 2 цифры = 3 символа
     let expPart;
     if (expSign === '-') {
-        expPart = '0-' + expDigits.slice(0, 1); // например "0-8"
+        expPart = '-' + expDigits; // например "-02"
     } else {
-        expPart = '0+' + expDigits.slice(0, 1); // например "0+8"
+        expPart = '+' + expDigits; // например "+02"
     }
 
     const result = `${mantissaFormatted} ${expPart}`;
     return result; // Всегда 14 символов (11 + 3)
+}
+
+/**
+ * Специальный форматтер для режима ВП
+ * Отображает всю строку целиком без разделения на span
+ */
+function formatVPDisplay(value) {
+    return `<span class="vp-display">${value}</span>`;
 }
 
 /**
@@ -248,7 +270,11 @@ function updateScreen() {
     }
     
     // Разделение на span для правильного отображения
-    if (formattedValue.includes(',')) {
+    if (expectingExponent || isVPFormatted) {
+        // Режим ВП - используем специальный форматтер
+        screenText.innerHTML = formatVPDisplay(formattedValue);
+    } else if (formattedValue.includes(',')) {
+        // Обычное форматирование с запятой
         const parts = formattedValue.split(',');
         const integerPart = parts[0];
         const decimalPart = parts[1];
@@ -288,6 +314,7 @@ function clearAll() {
     expectingExponent = false;
     exponentSign = '';
     exponentDigits = '';
+    isVPFormatted = false;
     lastOperator = null;
     lastOperand = null;
     lastOperand2 = null;
@@ -556,6 +583,9 @@ function handleInput(value) {
                 const baseNum = currentInput.replace(',', '.');
                 const expPart = (exponentDigits === '' ? '00' : exponentDigits.padStart(2, '0'));
                 currentInput = `${baseNum}e${exponentSign}${expPart}`;
+                
+                // Устанавливаем флаг VP форматирования для отображения степеней
+                isVPFormatted = true;
                 
                 expectingExponent = false;
                 exponentSign = '';
