@@ -120,9 +120,9 @@ function checkOverflow(number) {
  */
 function formatNumberAuto(number) {
     if (hasError) return '·'.repeat(15); // 15 точек для переполнения
-    let formatted = number.toString().replace('.', ',');
+    let formatted = number.toString();
     // Проверка на переполнение
-    const absValue = Math.abs(parseFloat(formatted.replace(',', '.')));
+    const absValue = Math.abs(parseFloat(formatted));
     if (absValue > 9.9999999e99 || isNaN(absValue)) {
         hasError = true;
         return '·'.repeat(15); // 15 точек для переполнения
@@ -136,14 +136,14 @@ function formatNumberAuto(number) {
     if (isEightDigitMantissaMode && formatted.toLowerCase().includes('e')) {
         const [mantissaStr] = formatted.split(/e/i);
         const mantissaSign = mantissaStr.startsWith('-') ? '-' : '';
-        let mantissaBody = mantissaStr.replace('-', '').replace(',', '');
+        let mantissaBody = mantissaStr.replace('-', '').replace('.', '');
 
         while (mantissaBody.length < 8) {
             mantissaBody += '0';
         }
         const digitsToUse = mantissaBody.slice(0, 8);
 
-        let mantissaFormatted = mantissaSign + digitsToUse[0] + ',' + digitsToUse.slice(1);
+        let mantissaFormatted = mantissaSign + digitsToUse[0] + '.' + digitsToUse.slice(1);
         return mantissaFormatted.padStart(11, ' '); // Всегда 11 символов
     }
 
@@ -151,7 +151,7 @@ function formatNumberAuto(number) {
     if (!formatted.toLowerCase().includes('e')) {
         const sign = formatted.startsWith('-') ? '-' : '';
         const numberPart = formatted.startsWith('-') ? formatted.slice(1) : formatted;
-        const parts = numberPart.split(',');
+        const parts = numberPart.split('.');
         let integerPart = parts[0];
         let decimalPart = parts[1] || '';
         
@@ -159,11 +159,11 @@ function formatNumberAuto(number) {
         decimalPart = decimalPart.replace(/0+$/, '');
         
         let result = `${sign}${integerPart}`;
-        // Добавляем запятую только если есть дробная часть
+        // Добавляем точку только если есть дробная часть
         if (decimalPart.length > 0) {
-            result += ',' + decimalPart;
+            result += '.' + decimalPart;
         } else {
-            result += ','; // Всегда показываем запятую
+            result += '.'; // Всегда показываем точку
         }
         
         // Ограничиваем длину до 11 символов
@@ -180,7 +180,7 @@ function formatNumberAuto(number) {
     const exponentStrRaw = parts[1] || '';
 
     const mantissaSign = mantissaStrRaw.startsWith('-') ? '-' : '';
-    let mantissaBody = mantissaStrRaw.replace('-', '').replace(',', '');
+    let mantissaBody = mantissaStrRaw.replace('-', '').replace('.', '');
 
     // Дополняем мантиссу до 11 символов (1 цифра + запятая + 9 символов после запятой)
     while (mantissaBody.length < 11) {
@@ -188,8 +188,8 @@ function formatNumberAuto(number) {
     }
     const mantissaDigits = mantissaBody.slice(0, 11);
 
-    // Форматируем мантиссу: знак + 1 цифра + запятая + 9 символов = 11 символов
-    const mantissaFormatted = mantissaSign + mantissaDigits[0] + ',' + mantissaDigits.slice(1);
+    // Форматируем мантиссу: знак + 1 цифра + точка + 9 символов = 11 символов
+    const mantissaFormatted = mantissaSign + mantissaDigits[0] + '.' + mantissaDigits.slice(1);
 
     // --- порядок: извлекаем из строки или используем глобальные переменные ---
     let expDigits, expSign;
@@ -207,7 +207,7 @@ function formatNumberAuto(number) {
             expDigits = exponentDigits.padStart(2, '0');
         } else {
             // Иначе вычисляем реальный порядок степеней для числа
-            const numValue = parseFloat(mantissaStrRaw.replace(',', '.'));
+            const numValue = parseFloat(mantissaStrRaw);
             if (numValue !== 0) {
                 const realExponent = Math.floor(Math.log10(Math.abs(numValue)));
                 expDigits = Math.abs(realExponent).toString().padStart(2, '0');
@@ -273,14 +273,14 @@ function updateScreen() {
     if (expectingExponent || isVPFormatted) {
         // Режим ВП - используем специальный форматтер
         screenText.innerHTML = formatVPDisplay(formattedValue);
-    } else if (formattedValue.includes(',')) {
-        // Обычное форматирование с запятой
-        const parts = formattedValue.split(',');
+    } else if (formattedValue.includes('.')) {
+        // Обычное форматирование с точкой
+        const parts = formattedValue.split('.');
         const integerPart = parts[0];
         const decimalPart = parts[1];
         screenText.innerHTML =
             `<span class="integer-part">${integerPart}</span>` +
-            `<span class="comma-part">,</span>` +
+            `<span class="comma-part">.</span>` +
             `<span class="decimal-part">${decimalPart}</span>`;
     } else {
         screenText.innerHTML = `<span class="integer-part">${formattedValue}</span>`;
@@ -357,7 +357,7 @@ function handleInput(value) {
         // Если мы в режиме ввода порядка — переключаем ТОЛЬКО знак порядка
         exponentSign = (exponentSign === '-') ? '+' : '-';
 
-        const baseNum = currentInput.replace(',', '.');
+        const baseNum = currentInput;
         const expPart = (exponentDigits === '' ? '00' : exponentDigits.padStart(2, '0'));
 
         const tempInput = `${baseNum}e${exponentSign}${expPart}`;
@@ -390,7 +390,7 @@ function handleInput(value) {
             // Для промежуточного отображения: если ещё не ввели цифры — показываем "00"
             const displayExp = (exponentDigits === '' ? '00' : exponentDigits.padStart(2, '0'));
 
-            const baseNum = currentInput.replace(',', '.');
+            const baseNum = currentInput;
             const tempInput = `${baseNum}e${exponentSign}${displayExp}`;
 
             displayValue = formatNumberAuto(tempInput);
@@ -425,17 +425,17 @@ function handleInput(value) {
         return;
     }
     
-    // Обработка запятой
-    if (value === ',') {
+    // Обработка точки
+    if (value === '.') {
         if (expectingExponent) {
-            // В режиме ВП запятая добавляется к мантиссе
-            if (!currentInput.includes(',')) {
-                currentInput += currentInput === '' ? '0,' : ',';
+            // В режиме ВП точка добавляется к мантиссе
+            if (!currentInput.includes('.')) {
+                currentInput += currentInput === '' ? '0.' : '.';
                 resultMode = false;
                 // НЕ сбрасываем expectingExponent - остаемся в режиме ВП
                 
                 // Обновляем отображение с новой мантиссой
-                const baseNum = currentInput.replace(',', '.');
+                const baseNum = currentInput;
                 const expPart = (exponentDigits === '' ? '00' : exponentDigits.padStart(2, '0'));
                 const tempInput = `${baseNum}e${exponentSign}${expPart}`;
                 displayValue = formatNumberAuto(tempInput);
@@ -443,8 +443,8 @@ function handleInput(value) {
             }
         } else {
             // Обычный режим
-            if (!currentInput.includes(',')) {
-                currentInput += currentInput === '' ? '0,' : ','; // Добавляем '0,' если ввод пуст, иначе ','
+            if (!currentInput.includes('.')) {
+                currentInput += currentInput === '' ? '0.' : '.'; // Добавляем '0.' если ввод пуст, иначе '.'
                 resultMode = false;
                 displayValue = currentInput; // Присваиваем displayValue значение currentInput
                 updateScreen();            // Вызываем обновление дисплейного значения
@@ -458,7 +458,7 @@ function handleInput(value) {
         // Сбрасываем режим ВП при нажатии оператора, но сохраняем экспоненциальную форму
         if (expectingExponent) {
             // Сохраняем экспоненциальную форму в currentInput перед сбросом режима
-            const baseNum = currentInput.replace(',', '.');
+            const baseNum = currentInput;
             const expPart = (exponentDigits === '' ? '00' : exponentDigits.padStart(2, '0'));
             currentInput = `${baseNum}e${exponentSign}${expPart}`;
             
@@ -490,7 +490,7 @@ function handleInput(value) {
             exponentDigits = '';    // пока пусто, но на экране будем рисовать "00"
 
             // Для отображения используем временную строку, не меняя currentInput пока пользователь вводит порядок
-            const baseNum = currentInput.replace(',', '.');
+            const baseNum = currentInput;
             const tempInput = `${baseNum}e${exponentSign}00`; // всегда "00" в начале
             displayValue = formatNumberAuto(tempInput);
             updateScreen();
@@ -580,7 +580,7 @@ function handleInput(value) {
             // Сбрасываем режим ВП при нажатии равно, но сохраняем экспоненциальную форму
             if (expectingExponent) {
                 // Сохраняем экспоненциальную форму в currentInput перед сбросом режима
-                const baseNum = currentInput.replace(',', '.');
+                const baseNum = currentInput;
                 const expPart = (exponentDigits === '' ? '00' : exponentDigits.padStart(2, '0'));
                 currentInput = `${baseNum}e${exponentSign}${expPart}`;
                 
@@ -668,7 +668,7 @@ function isOperation(operation) {
  * @param {string} op - Оператор
  */
 function handleOperation(op) {
-    const inputValue = currentInput !== '' ? parseFloat(currentInput.replace(',', '.')) : null;
+    const inputValue = currentInput !== '' ? parseFloat(currentInput) : null;
     
     if (inputValue !== null) {
         if (operator !== null) {
@@ -692,7 +692,7 @@ function handleOperation(op) {
  * @param {string} func - Функция (sin, cos, tg)
  */
 function handleTrigFunction(func) {
-    const inputValue = currentInput !== '' ? parseFloat(currentInput.replace(',', '.')) : parseFloat(previousInput.replace(',', '.'));
+    const inputValue = currentInput !== '' ? parseFloat(currentInput) : parseFloat(previousInput);
     
     if (isNaN(inputValue)) {
         hasError = true;
@@ -755,10 +755,10 @@ function handleTrigFunction(func) {
     // Сохраняем результат в правильном формате
     if (Math.abs(result) >= 1e10 || (Math.abs(result) < 1e-10 && result !== 0)) {
         // Для больших или очень маленьких чисел используем экспоненциальную форму
-        currentInput = result.toExponential().replace('.', ',');
+        currentInput = result.toExponential();
     } else {
         // Для обычных чисел используем обычную форму
-        currentInput = result.toString().replace('.', ',');
+        currentInput = result.toString();
     }
     
     displayValue = formatNumberAuto(currentInput);
@@ -771,7 +771,7 @@ function handleTrigFunction(func) {
  * @param {string} func - Функция (lg, ln)
  */
 function handleLogFunction(func) {
-    const inputValue = currentInput !== '' ? parseFloat(currentInput.replace(',', '.')) : parseFloat(previousInput.replace(',', '.'));
+    const inputValue = currentInput !== '' ? parseFloat(currentInput) : parseFloat(previousInput);
     
     if (isNaN(inputValue) || inputValue <= 0) {
         hasError = true;
@@ -802,7 +802,7 @@ function handleLogFunction(func) {
  * Обработка квадратного корня
  */
 function handleSqrtFunction() {
-    const inputValue = currentInput !== '' ? parseFloat(currentInput.replace(',', '.')) : parseFloat(previousInput.replace(',', '.'));
+    const inputValue = currentInput !== '' ? parseFloat(currentInput) : parseFloat(previousInput);
     
     if (isNaN(inputValue) || inputValue < 0) {
         hasError = true;
@@ -828,7 +828,7 @@ function handleSqrtFunction() {
  * Обработка обратного числа (1/x)
  */
 function handleReverseFunction() {
-    const inputValue = currentInput !== '' ? parseFloat(currentInput.replace(',', '.')) : parseFloat(previousInput.replace(',', '.'));
+    const inputValue = currentInput !== '' ? parseFloat(currentInput) : parseFloat(previousInput);
     
     if (isNaN(inputValue) || inputValue === 0) {
         hasError = true;
@@ -873,7 +873,7 @@ function handleNegateFunction() {
  * Обработка экспоненты (e^x)
  */
 function handleExpFunction() {
-    const inputValue = currentInput !== '' ? parseFloat(currentInput.replace(',', '.')) : parseFloat(previousInput.replace(',', '.'));
+    const inputValue = currentInput !== '' ? parseFloat(currentInput) : parseFloat(previousInput);
     
     if (isNaN(inputValue)) {
         hasError = true;
@@ -899,7 +899,7 @@ function handleExpFunction() {
  * Обработка функции P (корень из суммы квадратов)
  */
 function handlePFunction() {
-    const inputValue = currentInput !== '' ? parseFloat(currentInput.replace(',', '.')) : parseFloat(previousInput.replace(',', '.'));
+    const inputValue = currentInput !== '' ? parseFloat(currentInput) : parseFloat(previousInput);
     
     if (isNaN(inputValue)) {
         hasError = true;
@@ -922,7 +922,7 @@ function handlePFunction() {
  * Обработка возведения в степень y^x
  */
 function handleYDegreeFunction() {
-    const inputValue = currentInput !== '' ? parseFloat(currentInput.replace(',', '.')) : parseFloat(previousInput.replace(',', '.'));
+    const inputValue = currentInput !== '' ? parseFloat(currentInput) : parseFloat(previousInput);
     
     if (isNaN(inputValue)) {
         hasError = true;
@@ -949,11 +949,11 @@ function handleZapFunction() {
     
     // Приоритет: currentInput, затем previousInput, затем displayValue, затем 0
     if (currentInput !== '') {
-        inputValue = parseFloat(currentInput.replace(',', '.'));
+        inputValue = parseFloat(currentInput);
     } else if (previousInput !== '') {
-        inputValue = parseFloat(previousInput.replace(',', '.'));
+        inputValue = parseFloat(previousInput);
     } else if (displayValue !== '0' && displayValue !== '') {
-        inputValue = parseFloat(displayValue.replace(',', '.'));
+        inputValue = parseFloat(displayValue);
     } else {
         inputValue = 0; // Если ничего не введено, сохраняем 0
     }
@@ -977,10 +977,10 @@ function handleVpFunction() {
         // Сохраняем результат в правильном формате
         if (Math.abs(memoryRegisterP) >= 1e10 || (Math.abs(memoryRegisterP) < 1e-10 && memoryRegisterP !== 0)) {
             // Для больших или очень маленьких чисел используем экспоненциальную форму
-            currentInput = memoryRegisterP.toExponential().replace('.', ',');
+            currentInput = memoryRegisterP.toExponential();
         } else {
             // Для обычных чисел используем обычную форму
-            currentInput = memoryRegisterP.toString().replace('.', ',');
+            currentInput = memoryRegisterP.toString();
         }
         
         displayValue = formatNumberAuto(currentInput);
@@ -999,11 +999,11 @@ function handleSchFunction() {
     
     // Приоритет: currentInput, затем previousInput, затем displayValue, затем 0
     if (currentInput !== '') {
-        inputValue = parseFloat(currentInput.replace(',', '.'));
+        inputValue = parseFloat(currentInput);
     } else if (previousInput !== '') {
-        inputValue = parseFloat(previousInput.replace(',', '.'));
+        inputValue = parseFloat(previousInput);
     } else if (displayValue !== '0' && displayValue !== '') {
-        inputValue = parseFloat(displayValue.replace(',', '.'));
+        inputValue = parseFloat(displayValue);
     } else {
         inputValue = 0; // Если ничего не введено, прибавляем 0
     }
@@ -1030,10 +1030,10 @@ function handleSchFunction() {
     let formattedResult;
     if (Math.abs(memoryRegisterP) >= 1e10 || (Math.abs(memoryRegisterP) < 1e-10 && memoryRegisterP !== 0)) {
         // Для больших или очень маленьких чисел используем экспоненциальную форму
-        formattedResult = memoryRegisterP.toExponential().replace('.', ',');
+        formattedResult = memoryRegisterP.toExponential();
     } else {
         // Для обычных чисел используем обычную форму
-        formattedResult = memoryRegisterP.toString().replace('.', ',');
+        formattedResult = memoryRegisterP.toString();
     }
     
     displayValue = formatNumberAuto(formattedResult);
@@ -1053,7 +1053,7 @@ function calculateResult() {
     
     // НОВАЯ ЛОГИКА: ОБРАБОТКА y^x и P функции
     if (isWaitingForPowerExponent) {
-        const inputValue = currentInput !== '' ? parseFloat(currentInput.replace(',', '.')) : null;
+        const inputValue = currentInput !== '' ? parseFloat(currentInput) : null;
         
         // Проверяем, какая функция активна
         if (powerBase !== null) {
@@ -1078,10 +1078,10 @@ function calculateResult() {
                     // Сохраняем результат в правильном формате
                     if (Math.abs(result) >= 1e10 || (Math.abs(result) < 1e-10 && result !== 0)) {
                         // Для больших или очень маленьких чисел используем экспоненциальную форму
-                        currentInput = result.toExponential().replace('.', ',');
+                        currentInput = result.toExponential();
                     } else {
                         // Для обычных чисел используем обычную форму
-                        currentInput = result.toString().replace('.', ',');
+                        currentInput = result.toString();
                     }
                     
                     displayValue = formatNumberAuto(currentInput);
@@ -1124,10 +1124,10 @@ function calculateResult() {
                     // Сохраняем результат в правильном формате
                     if (Math.abs(result) >= 1e10 || (Math.abs(result) < 1e-10 && result !== 0)) {
                         // Для больших или очень маленьких чисел используем экспоненциальную форму
-                        currentInput = result.toExponential().replace('.', ',');
+                        currentInput = result.toExponential();
                     } else {
                         // Для обычных чисел используем обычную форму
-                        currentInput = result.toString().replace('.', ',');
+                        currentInput = result.toString();
                     }
                     
                     displayValue = formatNumberAuto(currentInput);
@@ -1152,9 +1152,9 @@ function calculateResult() {
         return;
     }
     
-    const inputValue = currentInput !== '' ? parseFloat(currentInput.replace(',', '.')) : null;
+    const inputValue = currentInput !== '' ? parseFloat(currentInput) : null;
     if (operator !== null) {
-        const prevValue = parseFloat(previousInput.replace(',', '.'));
+        const prevValue = parseFloat(previousInput);
         if (isNaN(prevValue) || (inputValue === null && operator !== null)) {
             if (inputValue === null) {
                 displayValue = formatNumberAuto(previousInput);
@@ -1222,10 +1222,10 @@ function calculateResult() {
         // Сохраняем результат в правильном формате
         if (Math.abs(result) >= 1e10 || (Math.abs(result) < 1e-10 && result !== 0)) {
             // Для больших или очень маленьких чисел используем экспоненциальную форму
-            currentInput = result.toExponential().replace('.', ',');
+            currentInput = result.toExponential();
         } else {
             // Для обычных чисел используем обычную форму
-            currentInput = result.toString().replace('.', ',');
+            currentInput = result.toString();
         }
         
         displayValue = formatNumberAuto(currentInput);
@@ -1270,10 +1270,10 @@ function calculateResult() {
         // Сохраняем результат в правильном формате
         if (Math.abs(result) >= 1e10 || (Math.abs(result) < 1e-10 && result !== 0)) {
             // Для больших или очень маленьких чисел используем экспоненциальную форму
-            currentInput = result.toExponential().replace('.', ',');
+            currentInput = result.toExponential();
         } else {
             // Для обычных чисел используем обычную форму
-            currentInput = result.toString().replace('.', ',');
+            currentInput = result.toString();
         }
         
         displayValue = formatNumberAuto(currentInput);
@@ -1316,7 +1316,7 @@ document.addEventListener('DOMContentLoaded', function() {
     addEventListenerIfExists("btn_8", "click", () => handleInput("8"));
     addEventListenerIfExists("btn_9", "click", () => handleInput("9"));
     addEventListenerIfExists("btn_clear", "click", () => handleInput("c"));
-    addEventListenerIfExists("btn_dot", "click", () => handleInput(","));
+    addEventListenerIfExists("btn_dot", "click", () => handleInput("."));
     addEventListenerIfExists("btn_plus", "click", () => handleInput("+"));
     addEventListenerIfExists("btn_minus", "click", () => handleInput("-"));
     addEventListenerIfExists("btn_multiply", "click", () => handleInput("*"));
