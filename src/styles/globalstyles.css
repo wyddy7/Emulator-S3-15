@@ -5,6 +5,13 @@
     font-weight: bold;
 }
 
+/* Цифровой шрифт для экрана */
+@font-face {
+    font-family: "Digital";
+    src: url("../fonts/digital.ttf") format("truetype");
+    font-weight: normal;
+}
+
 .text-2 {
     font-family: "Crimson Text";
     font-weight: bold;
@@ -113,14 +120,18 @@ button {
     z-index: 100;
 }
 .screen_text {
-    font-family: "HomeVideo";
-    font-size: 15px;
+    font-family: "Digital", monospace;
+    font-size: 18px;
     letter-spacing: 1px;
     color: #ff0000;
-
+    font-weight: normal;
+    text-shadow: none;
+    width: 200px;
+    text-align: left;
+    line-height: 0.8;
+    word-spacing: 0px;
     position: relative;
     height: 0px;
-
     left: 90px;
     top: 65px;
     z-index: 1000;
