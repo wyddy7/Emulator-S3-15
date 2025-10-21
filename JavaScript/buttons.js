@@ -151,6 +151,13 @@ function formatNumberAuto(number) {
     }
     
     let formatted = number.toString();
+    
+    // Если число автоматически преобразовалось в экспоненциальную форму,
+    // устанавливаем флаг VP форматирования для правильного отображения степеней
+    if (formatted.toLowerCase().includes('e') && !isVPFormatted) {
+        isVPFormatted = true;
+    }
+    
     // Проверка на переполнение
     const absValue = Math.abs(parseFloat(formatted));
     if (absValue > 9.9999999e99 || isNaN(absValue)) {
@@ -1216,6 +1223,9 @@ function calculateResult() {
                     // Сохраняем результат в обычной форме
                     currentInput = result.toString();
                     
+                    // Сбрасываем флаг VP форматирования, так как результат теперь обычное число
+                    isVPFormatted = false;
+                    
                     displayValue = formatNumberAuto(currentInput);
                     // Сбрасываем флаги
                     isWaitingForPowerExponent = false;
@@ -1255,6 +1265,9 @@ function calculateResult() {
                     
                     // Сохраняем результат в обычной форме
                     currentInput = result.toString();
+                    
+                    // Сбрасываем флаг VP форматирования, так как результат теперь обычное число
+                    isVPFormatted = false;
                     
                     displayValue = formatNumberAuto(currentInput);
                     // Сбрасываем флаги
@@ -1348,6 +1361,9 @@ function calculateResult() {
         // Сохраняем результат в обычной форме
         currentInput = result.toString();
         
+        // Сбрасываем флаг VP форматирования, так как результат теперь обычное число
+        isVPFormatted = false;
+        
         displayValue = formatNumberAuto(currentInput);
         updateScreen();
     } else if (lastOperator !== null && lastOperand !== null && lastOperand2 !== null && inputValue !== null) {
@@ -1389,6 +1405,9 @@ function calculateResult() {
         
         // Сохраняем результат в обычной форме
         currentInput = result.toString();
+        
+        // Сбрасываем флаг VP форматирования, так как результат теперь обычное число
+        isVPFormatted = false;
         
         displayValue = formatNumberAuto(currentInput);
         updateScreen();
