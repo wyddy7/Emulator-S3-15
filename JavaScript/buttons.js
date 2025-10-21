@@ -10,7 +10,10 @@ let currentInput = '';
 let operator = null;
 let previousInput = '';
 let memoryRegisterX = 0; // Основной регистр X (текущее значение)
-let memoryRegisterP = 0; // Дополнительный регистр П
+let memoryRegister1 = 0; // Первый регистр памяти
+let memoryRegister2 = 0; // Второй регистр памяти
+let waitingForMemoryRegister = false; // Флаг ожидания ввода номера регистра
+let memoryOperation = null; // 'zap' или 'sch'
 let isPowerOn = true; // Калькулятор всегда включен
 let isDegreeMode = true;
 let isFMode = false;
@@ -383,6 +386,10 @@ function clearAll() {
     zapCounter = 0;
     schCounter = 0;
     memoryRegisterX = 0;
+    memoryRegister1 = 0;
+    memoryRegister2 = 0;
+    waitingForMemoryRegister = false;
+    memoryOperation = null;
     
     try {
         console.log('Калькулятор очищен');
@@ -404,6 +411,12 @@ function handleInput(value) {
     // Разрешаем очистку даже при ошибке
     if (hasError && value !== 'c' && value !== 'cx') return;
     if (!isPowerOn) return;
+    
+    // Блокируем все операции кроме 1, 2 и сброса при ожидании ввода номера регистра
+    if (waitingForMemoryRegister && !['1', '2', 'c', 'cx'].includes(value)) {
+        console.log(`Заблокировано: ${value} (ожидается ввод номера регистра)`);
+        return;
+    }
     
     // Обработка negate в режиме ВП (должна быть в начале)
     if (value === 'negate' && expectingExponent) {
@@ -437,6 +450,48 @@ function handleInput(value) {
     
     // Обработка цифр и запятой
     if (/[0-9]/.test(value)) {
+        // Если ожидаем ввод номера регистра памяти
+        if (waitingForMemoryRegister && (value === '1' || value === '2')) {
+            const registerNumber = parseInt(value);
+            
+            if (memoryOperation === 'zap') {
+                // Записываем в выбранный регистр
+                if (registerNumber === 1) {
+                    memoryRegister1 = memoryRegisterX;
+                    console.log(`ЗП: Сохранено в регистр 1: ${memoryRegister1}`);
+                } else {
+                    memoryRegister2 = memoryRegisterX;
+                    console.log(`ЗП: Сохранено в регистр 2: ${memoryRegister2}`);
+                }
+            } else if (memoryOperation === 'sch') {
+                // Извлекаем из выбранного регистра
+                let valueFromMemory;
+                if (registerNumber === 1) {
+                    valueFromMemory = memoryRegister1;
+                    console.log(`СЧ: Извлечено из регистра 1: ${valueFromMemory}`);
+                } else {
+                    valueFromMemory = memoryRegister2;
+                    console.log(`СЧ: Извлечено из регистра 2: ${valueFromMemory}`);
+                }
+                
+                // Устанавливаем извлеченное значение как текущий ввод
+                currentInput = valueFromMemory.toString();
+                displayValue = formatNumberAuto(currentInput);
+                updateScreen();
+            }
+            
+            // Выходим из режима ожидания
+            waitingForMemoryRegister = false;
+            memoryOperation = null;
+            memoryRegisterX = 0;
+            return;
+        }
+        
+        // Если ожидаем ввод регистра, но нажали не 1 или 2 - игнорируем
+        if (waitingForMemoryRegister) {
+            return;
+        }
+        
         if (resultMode) {
             // Очищаем экран и начинаем новое число
             currentInput = '';
@@ -1044,9 +1099,14 @@ function handleYDegreeFunction() {
  * Обработка записи в память (ЗП)
  */
 function handleZapFunction() {
+    if (waitingForMemoryRegister) {
+        // Если уже ожидаем ввод регистра, игнорируем повторное нажатие zap
+        return;
+    }
+    
     let inputValue;
     
-    // Приоритет: currentInput, затем previousInput, затем displayValue, затем 0
+    // Получаем значение для сохранения
     if (currentInput !== '') {
         inputValue = parseFloat(currentInput);
     } else if (previousInput !== '') {
@@ -1063,21 +1123,30 @@ function handleZapFunction() {
         return;
     }
     
-    // В новой архитектуре используем только один регистр памяти
-    memoryRegisterP = inputValue;
-    console.log(`ЗП: Сохранено в memoryRegisterP: ${memoryRegisterP}`);
+    // Входим в режим ожидания ввода номера регистра
+    waitingForMemoryRegister = true;
+    memoryOperation = 'zap';
+    
+    // Сохраняем значение для записи
+    memoryRegisterX = inputValue;
+    
+    console.log(`ЗП: Ожидание ввода номера регистра (1 или 2) для значения: ${inputValue}`);
 }
 
 /**
  * Обработка вызова из памяти (ВП)
  */
 function handleVpFunction() {
-    if (memoryRegisterP !== 0) {
-        // Сохраняем результат в обычной форме
-        currentInput = memoryRegisterP.toString();
-        
+    // ВП теперь работает с двумя регистрами - сначала проверяем регистр 1, затем 2
+    if (memoryRegister1 !== 0) {
+        currentInput = memoryRegister1.toString();
         displayValue = formatNumberAuto(currentInput);
-        console.log(`ВП: Вызвано из memoryRegisterP: ${memoryRegisterP}`);
+        console.log(`ВП: Вызвано из регистра 1: ${memoryRegister1}`);
+        updateScreen();
+    } else if (memoryRegister2 !== 0) {
+        currentInput = memoryRegister2.toString();
+        displayValue = formatNumberAuto(currentInput);
+        console.log(`ВП: Вызвано из регистра 2: ${memoryRegister2}`);
         updateScreen();
     } else {
         console.log("ВП: Нет данных в памяти");
@@ -1088,43 +1157,16 @@ function handleVpFunction() {
  * Обработка счёта из памяти (СЧ)
  */
 function handleSchFunction() {
-    let inputValue;
-    
-    // Приоритет: currentInput, затем previousInput, затем displayValue, затем 0
-    if (currentInput !== '') {
-        inputValue = parseFloat(currentInput);
-    } else if (previousInput !== '') {
-        inputValue = parseFloat(previousInput);
-    } else if (displayValue !== '0' && displayValue !== '') {
-        inputValue = parseFloat(displayValue);
-    } else {
-        inputValue = 0; // Если ничего не введено, прибавляем 0
-    }
-    
-    if (isNaN(inputValue)) {
-        hasError = true;
-        updateScreen();
+    if (waitingForMemoryRegister) {
+        // Если уже ожидаем ввод регистра, игнорируем повторное нажатие sch
         return;
     }
     
-    // В новой архитектуре используем только один регистр памяти
-    const result = memoryRegisterP + inputValue;
+    // Входим в режим ожидания ввода номера регистра
+    waitingForMemoryRegister = true;
+    memoryOperation = 'sch';
     
-    if (Math.abs(result) > 9.9999999e99) {
-        hasError = true;
-        updateScreen();
-        return;
-    }
-    
-    memoryRegisterP = result;
-    // НЕ очищаем currentInput и previousInput, чтобы при повторном нажатии СЧ прибавлялось то же число
-    
-    // Форматируем результат для отображения
-    const formattedResult = memoryRegisterP.toString();
-    
-    displayValue = formatNumberAuto(formattedResult);
-    console.log(`СЧ: Прибавлено к memoryRegisterP: ${memoryRegisterP}`);
-    updateScreen();
+    console.log(`СЧ: Ожидание ввода номера регистра (1 или 2)`);
 }
 
 /**
