@@ -174,7 +174,7 @@ function formatNumberAuto(number) {
         return result.padStart(11, ' '); // Всегда 11 символов для естественной формы
     }
 
-    // --- Экспоненциальная форма: мантисса 8 символов + пробел + порядок 3 символа = 11 символов + 3 символа = 14 символов ---
+    // --- Экспоненциальная форма: мантисса 11 знаков + порядок 3 знака = 14 символов ---
     const parts = formatted.split(/e/i);
     const mantissaStrRaw = parts[0];
     const exponentStrRaw = parts[1] || '';
@@ -182,14 +182,14 @@ function formatNumberAuto(number) {
     const mantissaSign = mantissaStrRaw.startsWith('-') ? '-' : '';
     let mantissaBody = mantissaStrRaw.replace('-', '').replace('.', '');
 
-    // Дополняем мантиссу до 11 символов (1 цифра + запятая + 9 символов после запятой)
-    while (mantissaBody.length < 11) {
-        mantissaBody += ' ';
+    // Дополняем мантиссу до 10 цифр (1 цифра + 9 цифр после запятой)
+    while (mantissaBody.length < 10) {
+        mantissaBody += '0';
     }
-    const mantissaDigits = mantissaBody.slice(0, 11);
+    const mantissaDigits = mantissaBody.slice(0, 10);
 
-    // Форматируем мантиссу: знак + 1 цифра + точка + 9 символов = 11 символов
-    const mantissaFormatted = mantissaSign + mantissaDigits[0] + '.' + mantissaDigits.slice(1);
+    // Форматируем мантиссу: знак + 1 цифра + запятая + 9 цифр = 11 знаков
+    const mantissaFormatted = mantissaSign + mantissaDigits[0] + ',' + mantissaDigits.slice(1);
 
     // --- порядок: извлекаем из строки или используем глобальные переменные ---
     let expDigits, expSign;
@@ -206,27 +206,20 @@ function formatNumberAuto(number) {
         if (exponentDigits && exponentDigits !== '') {
             expDigits = exponentDigits.padStart(2, '0');
         } else {
-            // Иначе вычисляем реальный порядок степеней для числа
-            const numValue = parseFloat(mantissaStrRaw);
-            if (numValue !== 0) {
-                const realExponent = Math.floor(Math.log10(Math.abs(numValue)));
-                expDigits = Math.abs(realExponent).toString().padStart(2, '0');
-                expSign = realExponent >= 0 ? '+' : '-';
-            } else {
-                expDigits = '00';
-            }
+            // В режиме ВП показываем "00" по умолчанию
+            expDigits = '00';
         }
     }
 
-    // Форматируем порядок: знак + 2 цифры = 3 символа
+    // Форматируем порядок: знак + 2 цифры = 3 знака
     let expPart;
     if (expSign === '-') {
-        expPart = '-' + expDigits; // например "-02"
+        expPart = '-' + expDigits; // например "-34"
     } else {
-        expPart = '+' + expDigits; // например "+02"
+        expPart = ' ' + expDigits; // например " 34" (пробел вместо +)
     }
 
-    const result = `${mantissaFormatted} ${expPart}`;
+    const result = `${mantissaFormatted}${expPart}`;
     return result; // Всегда 14 символов (11 + 3)
 }
 
@@ -271,8 +264,9 @@ function updateScreen() {
     
     // Разделение на span для правильного отображения
     if (expectingExponent || isVPFormatted) {
-        // Режим ВП - используем специальный форматтер
-        screenText.innerHTML = formatVPDisplay(formattedValue);
+        // Режим ВП - показываем полную строку с порядком
+        const fullDisplayValue = displayValue || currentInput || '0';
+        screenText.innerHTML = formatVPDisplay(fullDisplayValue);
     } else if (formattedValue.includes('.')) {
         // Обычное форматирование с точкой
         const parts = formattedValue.split('.');
@@ -416,8 +410,8 @@ function handleInput(value) {
         } else if (currentInput === '-0') {
             currentInput = '-' + value; // Заменяем '-0' на '-новая_цифра'
         } else {
-            // Обычный случай: добавляем цифру, если не превышено 8 цифр
-            if (currentInput.replace(/[^0-9]/g, '').length >= 8) return;
+            // Обычный случай: добавляем цифру, если не превышено 9 цифр
+            if (currentInput.replace(/[^0-9]/g, '').length >= 9) return;
             currentInput += value;
         }
         displayValue = currentInput || '0';
@@ -1710,6 +1704,81 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("=== КОНЕЦ ТЕСТА ИСПРАВЛЕННОЙ ЛОГИКИ ARC ===");
     };
     
+    /**
+     * Функция для тестирования экспоненциального форматирования
+     */
+    window.testExponentialFormatting = function() {
+        console.log("=== ТЕСТ ЭКСПОНЕНЦИАЛЬНОГО ФОРМАТИРОВАНИЯ ===");
+        
+        // Тест 1: Положительный порядок
+        console.log("\nТест 1: Положительный порядок");
+        const test1 = formatNumberAuto("3.145678904e34");
+        console.log(`Вход: 3.145678904e34`);
+        console.log(`Результат: "${test1}"`);
+        console.log(`Длина: ${test1.length}`);
+        console.log(`Ожидается: "3,145678904 34" (14 символов)`);
+        
+        // Тест 2: Отрицательный порядок
+        console.log("\nТест 2: Отрицательный порядок");
+        const test2 = formatNumberAuto("3.145678904e-34");
+        console.log(`Вход: 3.145678904e-34`);
+        console.log(`Результат: "${test2}"`);
+        console.log(`Длина: ${test2.length}`);
+        console.log(`Ожидается: "3,145678904-34" (14 символов)`);
+        
+        // Тест 3: Очень большое число
+        console.log("\nТест 3: Очень большое число");
+        const test3 = formatNumberAuto("1.234567890e99");
+        console.log(`Вход: 1.234567890e99`);
+        console.log(`Результат: "${test3}"`);
+        console.log(`Длина: ${test3.length}`);
+        console.log(`Ожидается: "1,234567890 99" (14 символов)`);
+        
+        // Тест 4: Очень маленькое число
+        console.log("\nТест 4: Очень маленькое число");
+        const test4 = formatNumberAuto("5.678901234e-99");
+        console.log(`Вход: 5.678901234e-99`);
+        console.log(`Результат: "${test4}"`);
+        console.log(`Длина: ${test4.length}`);
+        console.log(`Ожидается: "5,678901234-99" (14 символов)`);
+        
+        // Тест 5: Число с недостаточным количеством цифр в мантиссе
+        console.log("\nТест 5: Короткая мантисса");
+        const test5 = formatNumberAuto("1.23e45");
+        console.log(`Вход: 1.23e45`);
+        console.log(`Результат: "${test5}"`);
+        console.log(`Длина: ${test5.length}`);
+        console.log(`Ожидается: "1,230000000 45" (14 символов)`);
+        
+        // Тест 6: Отрицательное число
+        console.log("\nТест 6: Отрицательное число");
+        const test6 = formatNumberAuto("-2.345678901e-12");
+        console.log(`Вход: -2.345678901e-12`);
+        console.log(`Результат: "${test6}"`);
+        console.log(`Длина: ${test6.length}`);
+        console.log(`Ожидается: "-2,345678901-12" (14 символов)`);
+        
+        // Тест 7: Проверка через симуляцию ВП
+        console.log("\nТест 7: Режим ВП (ввод порядка)");
+        clearAll();
+        console.log("Симуляция: 3.141592653 ВП 25");
+        window.simulateKeyPresses("3 . 1 4 1 5 9 2 6 5 3 vp 2 5");
+        console.log(`Результат: "${screenText.textContent}"`);
+        console.log(`Длина: ${screenText.textContent.length}`);
+        console.log(`Ожидается: "3,141592653 25" (14 символов)`);
+        
+        // Тест 8: ВП с отрицательным порядком
+        console.log("\nТест 8: ВП с отрицательным порядком");
+        clearAll();
+        console.log("Симуляция: 1.234567890 ВП 34 negate");
+        window.simulateKeyPresses("1 . 2 3 4 5 6 7 8 9 0 vp 3 4 negate");
+        console.log(`Результат: "${screenText.textContent}"`);
+        console.log(`Длина: ${screenText.textContent.length}`);
+        console.log(`Ожидается: "1,234567890-34" (14 символов)`);
+        
+        console.log("\n=== КОНЕЦ ТЕСТА ЭКСПОНЕНЦИАЛЬНОГО ФОРМАТИРОВАНИЯ ===");
+    };
+
     /**
      * Функция для тестирования исправлений дисплея
      */
