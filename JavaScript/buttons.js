@@ -412,8 +412,8 @@ function handleInput(value) {
     if (hasError && value !== 'c' && value !== 'cx') return;
     if (!isPowerOn) return;
     
-    // Блокируем все операции кроме 1, 2 и сброса при ожидании ввода номера регистра
-    if (waitingForMemoryRegister && !['1', '2', 'c', 'cx'].includes(value)) {
+    // Блокируем все операции кроме 1, 2, zap, sch и сброса при ожидании ввода номера регистра
+    if (waitingForMemoryRegister && !['1', '2', 'zap', 'sch', 'c', 'cx'].includes(value)) {
         console.log(`Заблокировано: ${value} (ожидается ввод номера регистра)`);
         return;
     }
@@ -668,6 +668,12 @@ function handleInput(value) {
             hasError = false;
             currentInput = '';
             displayValue = '0';
+            
+            // Сбрасываем операции с памятью
+            waitingForMemoryRegister = false;
+            memoryOperation = null;
+            memoryRegisterX = 0;
+            
             updateScreen();
             break;
             
@@ -1100,7 +1106,9 @@ function handleYDegreeFunction() {
  */
 function handleZapFunction() {
     if (waitingForMemoryRegister) {
-        // Если уже ожидаем ввод регистра, игнорируем повторное нажатие zap
+        // Если уже ожидаем ввод регистра, переключаемся на zap операцию
+        memoryOperation = 'zap';
+        console.log(`ЗП: Переключено на запись, ожидание ввода номера регистра (1 или 2) для значения: ${memoryRegisterX}`);
         return;
     }
     
@@ -1158,7 +1166,9 @@ function handleVpFunction() {
  */
 function handleSchFunction() {
     if (waitingForMemoryRegister) {
-        // Если уже ожидаем ввод регистра, игнорируем повторное нажатие sch
+        // Если уже ожидаем ввод регистра, переключаемся на sch операцию
+        memoryOperation = 'sch';
+        console.log(`СЧ: Переключено на считывание, ожидание ввода номера регистра (1 или 2)`);
         return;
     }
     
