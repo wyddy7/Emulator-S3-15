@@ -410,8 +410,8 @@ function handleInput(value) {
         } else if (currentInput === '-0') {
             currentInput = '-' + value; // Заменяем '-0' на '-новая_цифра'
         } else {
-            // Обычный случай: добавляем цифру, если не превышено 9 цифр
-            if (currentInput.replace(/[^0-9]/g, '').length >= 9) return;
+            // Обычный случай: добавляем цифру, если не превышено 11 символов
+            if (currentInput.length >= 11) return;
             currentInput += value;
         }
         displayValue = currentInput || '0';
