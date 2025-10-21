@@ -139,8 +139,8 @@ function formatNumberAuto(number) {
         }
         const mantissaDigits = mantissaBody.slice(0, 10);
         
-        // Форматируем мантиссу: знак + 1 цифра + запятая + 9 цифр = 11 знаков
-        const mantissaFormatted = mantissaSign + mantissaDigits[0] + ',' + mantissaDigits.slice(1);
+        // Форматируем мантиссу: знак + 1 цифра + точка + 9 цифр = 11 знаков
+        const mantissaFormatted = mantissaSign + mantissaDigits[0] + '.' + mantissaDigits.slice(1);
         
         // Форматируем порядок
         const expSign = exponentStr.startsWith('-') ? '-' : ' ';
@@ -225,8 +225,8 @@ function formatNumberAuto(number) {
     }
     const mantissaDigits = mantissaBody.slice(0, 10);
 
-    // Форматируем мантиссу: знак + 1 цифра + запятая + 9 цифр = 11 знаков
-    const mantissaFormatted = mantissaSign + mantissaDigits[0] + ',' + mantissaDigits.slice(1);
+    // Форматируем мантиссу: знак + 1 цифра + точка + 9 цифр = 11 знаков
+    const mantissaFormatted = mantissaSign + mantissaDigits[0] + '.' + mantissaDigits.slice(1);
 
     // --- порядок: извлекаем из строки или используем глобальные переменные ---
     let expDigits, expSign;
@@ -266,7 +266,7 @@ function formatNumberAuto(number) {
  */
 function formatVPDisplay(value) {
     // Если это уже отформатированная строка (14 символов) - возвращаем как есть
-    if (typeof value === 'string' && value.length === 14 && value.includes(',')) {
+    if (typeof value === 'string' && value.length === 14 && value.includes('.')) {
         return `<span class="vp-display">${value}</span>`;
     }
     
@@ -285,8 +285,8 @@ function formatVPDisplay(value) {
         }
         const mantissaDigits = mantissaBody.slice(0, 10);
         
-        // Форматируем мантиссу: знак + 1 цифра + запятая + 9 цифр = 11 знаков
-        const mantissaFormatted = mantissaSign + mantissaDigits[0] + ',' + mantissaDigits.slice(1);
+        // Форматируем мантиссу: знак + 1 цифра + точка + 9 цифр = 11 знаков
+        const mantissaFormatted = mantissaSign + mantissaDigits[0] + '.' + mantissaDigits.slice(1);
         
         // Форматируем порядок
         const expSign = exponentStr.startsWith('-') ? '-' : ' ';
@@ -443,8 +443,8 @@ function handleInput(value) {
         }
         const mantissaDigits = mantissaBody.slice(0, 10);
 
-        // Форматируем мантиссу: знак + 1 цифра + запятая + 9 цифр = 11 знаков
-        const mantissaFormatted = mantissaSign + mantissaDigits[0] + ',' + mantissaDigits.slice(1);
+        // Форматируем мантиссу: знак + 1 цифра + точка + 9 цифр = 11 знаков
+        const mantissaFormatted = mantissaSign + mantissaDigits[0] + '.' + mantissaDigits.slice(1);
 
         // Форматируем порядок
         const expSign = exponentSign === '-' ? '-' : ' ';
@@ -537,8 +537,8 @@ function handleInput(value) {
             }
             const mantissaDigits = mantissaBody.slice(0, 10);
 
-            // Форматируем мантиссу: знак + 1 цифра + запятая + 9 цифр = 11 знаков
-            const mantissaFormatted = mantissaSign + mantissaDigits[0] + ',' + mantissaDigits.slice(1);
+            // Форматируем мантиссу: знак + 1 цифра + точка + 9 цифр = 11 знаков
+            const mantissaFormatted = mantissaSign + mantissaDigits[0] + '.' + mantissaDigits.slice(1);
 
             // Форматируем порядок
             const expSign = exponentSign === '-' ? '-' : ' ';
@@ -648,8 +648,8 @@ function handleInput(value) {
             }
             const mantissaDigits = mantissaBody.slice(0, 10);
 
-            // Форматируем мантиссу: знак + 1 цифра + запятая + 9 цифр = 11 знаков
-            const mantissaFormatted = mantissaSign + mantissaDigits[0] + ',' + mantissaDigits.slice(1);
+            // Форматируем мантиссу: знак + 1 цифра + точка + 9 цифр = 11 знаков
+            const mantissaFormatted = mantissaSign + mantissaDigits[0] + '.' + mantissaDigits.slice(1);
 
             // Форматируем порядок: пробел + 00 = 3 знака
             const expPart = ' 00';
