@@ -86,6 +86,9 @@ function sqrt(x) {
     if (x < 0) {
         throw new Error("Квадратный корень из отрицательного числа");
     }
+    if (x === 0) {
+        return 0;  // Явно возвращаем 0 для корня из нуля
+    }
     return Math.sqrt(x);
 }
 
@@ -116,6 +119,11 @@ function formatNumber(number, precision = 10) {
     }
 
     const num = Number(number);
+    
+    // Специальная обработка для нуля
+    if (num === 0) {
+        return "0";
+    }
     
     // Проверка на диапазон для обычного отображения
     if ((Math.abs(num) >= 1e-9 && Math.abs(num) < 1e9) || num === 0) {

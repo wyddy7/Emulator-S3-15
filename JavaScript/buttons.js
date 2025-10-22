@@ -969,7 +969,15 @@ function handleLogFunction(func) {
  * Обработка квадратного корня
  */
 function handleSqrtFunction() {
-    const inputValue = currentInput !== '' ? parseFloat(currentInput) : parseFloat(previousInput);
+    let inputValue;
+    
+    // Если currentInput не пустой, используем его
+    if (currentInput !== '') {
+        inputValue = parseFloat(currentInput);
+    } else {
+        // Если currentInput пустой, используем 0 (корень из нуля)
+        inputValue = 0;
+    }
     
     if (isNaN(inputValue) || inputValue < 0) {
         hasError = true;
