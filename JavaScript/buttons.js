@@ -684,6 +684,12 @@ function handleInput(value) {
             memoryOperation = null;
             memoryRegisterX = 0;
             
+            // ИСПРАВЛЕНИЕ: Сбрасываем режим ввода степени при очистке
+            expectingExponent = false;
+            exponentSign = '';
+            exponentDigits = '';
+            isVPFormatted = false;
+            
             updateScreen();
             break;
             
