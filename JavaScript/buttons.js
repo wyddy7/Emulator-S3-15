@@ -367,7 +367,7 @@ function clearAll() {
     displayValue = '0';
     currentInput = '';
     operator = null;
-    previousInput = '';
+    previousInput = '0';  // Устанавливаем 0 для корректной работы функций
     memoryRegisterX = 0;
     bracketStack = [];
     expressionStack = [];
@@ -675,6 +675,7 @@ function handleInput(value) {
             hasError = false;
             currentInput = '';
             displayValue = '0';
+            previousInput = '0';  // Устанавливаем 0 для корректной работы функций
             
             // Сбрасываем операции с памятью
             waitingForMemoryRegister = false;
@@ -930,6 +931,12 @@ function handleTrigFunction(func) {
     
     displayValue = formatNumberAuto(currentInput);
     resultMode = true;
+    
+    // ИСПРАВЛЕНИЕ: Очищаем переменные для повторения операций
+    lastOperator = null;
+    lastOperand = null;
+    lastOperand2 = null;
+    
     updateScreen();
 }
 
@@ -962,6 +969,12 @@ function handleLogFunction(func) {
     currentInput = result.toString();
     displayValue = currentInput;
     resultMode = true;
+    
+    // ИСПРАВЛЕНИЕ: Очищаем переменные для повторения операций
+    lastOperator = null;
+    lastOperand = null;
+    lastOperand2 = null;
+    
     updateScreen();
 }
 
@@ -996,6 +1009,12 @@ function handleSqrtFunction() {
     currentInput = result.toString();
     displayValue = currentInput;
     resultMode = true;
+    
+    // ИСПРАВЛЕНИЕ: Очищаем переменные для повторения операций
+    lastOperator = null;
+    lastOperand = null;
+    lastOperand2 = null;
+    
     updateScreen();
 }
 
@@ -1022,6 +1041,12 @@ function handleReverseFunction() {
     currentInput = result.toString();
     displayValue = currentInput;
     resultMode = true;
+    
+    // ИСПРАВЛЕНИЕ: Очищаем переменные для повторения операций
+    lastOperator = null;
+    lastOperand = null;
+    lastOperand2 = null;
+    
     updateScreen();
 }
 
@@ -1067,6 +1092,12 @@ function handleExpFunction() {
     currentInput = result.toString();
     displayValue = currentInput;
     resultMode = true;
+    
+    // ИСПРАВЛЕНИЕ: Очищаем переменные для повторения операций
+    lastOperator = null;
+    lastOperand = null;
+    lastOperand2 = null;
+    
     updateScreen();
 }
 
