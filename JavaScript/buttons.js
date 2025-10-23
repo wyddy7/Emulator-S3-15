@@ -10,6 +10,7 @@ let currentInput = '';
 let operator = null;
 let previousInput = '';
 let memoryRegisterX = 0; // Основной регистр X (текущее значение)
+let memoryRegisterP = 0; // Дополнительный регистр П
 let memoryRegister1 = 0; // Первый регистр памяти
 let memoryRegister2 = 0; // Второй регистр памяти
 let waitingForMemoryRegister = false; // Флаг ожидания ввода номера регистра
@@ -365,10 +366,11 @@ function clearAll() {
     hasError = false;
     
     displayValue = '0';
-    currentInput = '';
+    currentInput = '';  // Исправлено: currentInput должен быть пустым
     operator = null;
-    previousInput = '0';  // Устанавливаем 0 для корректной работы функций
+    previousInput = '';  // Исправлено: previousInput должен быть пустым
     memoryRegisterX = 0;
+    memoryRegisterP = 0;  // Добавлено: сброс регистра П
     bracketStack = [];
     expressionStack = [];
     currentLevelOpen = false;
@@ -842,19 +844,48 @@ function isOperation(operation) {
  * @param {string} op - Оператор
  */
 function handleOperation(op) {
-    const inputValue = currentInput !== '' ? parseFloat(currentInput) : null;
+    if (!isPowerOn || hasError) return;
+    
+    // СБРАСЫВАЕМ РЕЖИМ y^x ПРИ НАЖАТИИ ОПЕРАТОРА
+    if (isWaitingForPowerExponent) {
+        isWaitingForPowerExponent = false;
+        powerBase = null;
+    }
+    
+    const inputValue = currentInput !== '' ? parseFloat(currentInput.replace(',', '.')) : null;
+    
+    if (currentLevelOpen) {
+        if (inputValue !== null) expressionStack.push(inputValue);
+        else if (previousInput !== '') {
+            const prevValue = parseFloat(previousInput.replace(',', '.'));
+            if (!isNaN(prevValue)) expressionStack.push(prevValue);
+        }
+        expressionStack.push(op);
+        currentInput = '';
+        displayValue = '0';
+        updateScreen();
+        return;
+    }
     
     if (inputValue !== null) {
-        if (operator !== null) {
-            calculateResult();
-        }
+        if (operator !== null) calculateResult();
         previousInput = currentInput;
         currentInput = '';
         operator = op;
+        // CORRECTED REPEAT LOGIC: ЗАПОМИНАЕМ ПЕРВЫЙ ОПЕРАНД И ОПЕРАТОР ДЛЯ ПОВТОРА ПРИ =
+        lastOperand = parseFloat(previousInput.replace(',', '.'));
+        lastOperand2 = null; // Сбрасываем lastOperand2, пока не выполнена операция
+        lastOperator = op;
         displayValue = previousInput;
     } else if (previousInput !== '') {
         operator = op;
         displayValue = previousInput;
+        // CORRECTED REPEAT LOGIC: ЗАПОМИНАЕМ ПЕРВЫЙ ОПЕРАНД И ОПЕРАТОР ДЛЯ ПОВТОРА ПРИ =
+        lastOperand = parseFloat(previousInput.replace(',', '.'));
+        lastOperand2 = null; // Сбрасываем lastOperand2, пока не выполнена операция
+        lastOperator = op;
+    } else {
+        if (currentInput === '' && previousInput === '') return;
     }
     
     resultMode = false;
@@ -1223,6 +1254,159 @@ function handleSchFunction() {
     memoryOperation = 'sch';
     
     console.log(`СЧ: Ожидание ввода номера регистра (1 или 2)`);
+}
+
+/**
+ * Начало ввода выражения в скобках
+ */
+function startBracket() {
+    if (hasError) return;
+    if (!isPowerOn) return;
+
+    // Если вводим новое уравнение — сбрасываем старые корни
+    quadraticRoots = [];
+    quadraticRootIndex = 0;
+
+    // Сохраняем коэффициенты для квадратного уравнения
+    if (currentInput !== '') {
+        const val = parseFloat(currentInput.replace(',', '.'));
+        if (!isNaN(val)) {
+            quadraticCoeffBuffer.push(val); // сначала a, потом b
+        }
+    }
+
+    // После сохранения очищаем ввод
+    currentInput = '';
+    displayValue = '0';
+
+    bracketStack.push({
+        previousInput: previousInput,
+        operator: operator,
+        displayValue: displayValue
+    });
+
+    expressionStack = [];
+    currentLevelOpen = true;
+    operator = null;
+    previousInput = '';
+
+    updateScreen();
+}
+
+/**
+ * Завершение ввода выражения в скобках
+ */
+function endBracket() {
+    if (hasError) return;
+    if (!isPowerOn) return;
+    if (!currentLevelOpen && bracketStack.length === 0) return;
+    
+    if (currentInput !== '') {
+        const value = parseFloat(currentInput.replace(',', '.'));
+        if (isNaN(value)) {
+            hasError = true;
+            updateScreen();
+            return;
+        }
+        expressionStack.push(value);
+    } else if (previousInput !== '') {
+        const value = parseFloat(previousInput.replace(',', '.'));
+        if (isNaN(value)) {
+            hasError = true;
+            updateScreen();
+            return;
+        }
+        expressionStack.push(value);
+    }
+    
+    if (expressionStack.length === 0) {
+        expressionStack.push(0);
+    }
+    
+    let bracketResult;
+    try {
+        bracketResult = evaluateExpression(expressionStack);
+    } catch (e) {
+        hasError = true;
+        updateScreen();
+        return;
+    }
+    
+    const prevState = bracketStack.pop();
+    if (prevState) {
+        previousInput = prevState.previousInput;
+        operator = prevState.operator;
+    } else {
+        previousInput = '';
+        operator = null;
+    }
+    
+    currentInput = bracketResult.toString().replace('.', ',');
+    displayValue = formatNumberAuto(currentInput);
+    resultMode = true; // Результат скобок — запрет на дописывание!
+    expressionStack = [];
+    currentLevelOpen = false;
+    updateScreen();
+}
+
+/**
+ * Вычисление выражения внутри скобок
+ * @param {Array} tokens - Массив чисел и операторов
+ * @returns {number} Результат вычисления
+ */
+function evaluateExpression(tokens) {
+    if (tokens.length === 0) return 0;
+    if (tokens.length % 2 === 0) throw new Error("Invalid expression");
+    
+    const tempStack = [tokens[0]];
+    
+    // Сначала обрабатываем умножение и деление
+    for (let i = 1; i < tokens.length; i += 2) {
+        const op = tokens[i];
+        const nextNum = tokens[i + 1];
+        
+        if (op === '*') {
+            const lastNum = tempStack.pop();
+            const result = lastNum * nextNum;
+            if (Math.abs(result) > 9.9999999e99) {
+                hasError = true;
+                throw new Error("Overflow");
+            }
+            tempStack.push(result);
+        } else if (op === '/') {
+            const lastNum = tempStack.pop();
+            if (nextNum === 0) {
+                hasError = true;
+                throw new Error("Division by zero");
+            }
+            const result = lastNum / nextNum;
+            if (Math.abs(result) > 9.9999999e99) {
+                hasError = true;
+                throw new Error("Overflow");
+            }
+            tempStack.push(result);
+        } else {
+            tempStack.push(op);
+            tempStack.push(nextNum);
+        }
+    }
+    
+    // Затем обрабатываем сложение и вычитание
+    let finalResult = tempStack[0];
+    for (let i = 1; i < tempStack.length; i += 2) {
+        const op = tempStack[i];
+        const nextNum = tempStack[i + 1];
+        
+        if (op === '+') finalResult += nextNum;
+        else if (op === '-') finalResult -= nextNum;
+        
+        if (Math.abs(finalResult) > 9.9999999e99) {
+            hasError = true;
+            throw new Error("Overflow");
+        }
+    }
+    
+    return finalResult;
 }
 
 /**
