@@ -687,7 +687,7 @@ function handleInput(value) {
                 displayValue = mantissaFormatted + expPart; // 14 символов без "e"
             } else {
                 // Если нет точки, добавляем её в конец
-                let paddedIntegerPart = mantissaBody;
+                let paddedIntegerPart = '';
                 while (paddedIntegerPart.length < 9) {
                     paddedIntegerPart += '0';
                 }
