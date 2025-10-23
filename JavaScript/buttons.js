@@ -486,6 +486,7 @@ function handleInput(value) {
                 // Устанавливаем извлеченное значение как текущий ввод
                 currentInput = valueFromMemory.toString();
                 displayValue = formatNumberAuto(currentInput);
+                resultMode = true;
                 updateScreen();
             }
             
@@ -561,7 +562,7 @@ function handleInput(value) {
                 }
                 
                 // Форматируем мантиссу: знак + целая часть + точка + 9 нулей = 11 знаков
-                const mantissaFormatted = mantissaSign + mantissaBody + '.' + paddedIntegerPart;
+                const mantissaFormatted = mantissaSign + mantissaBody + '.' + '0'.repeat(9);
                 
                 // Форматируем порядок
                 const expSign = exponentSign === '-' ? '-' : ' ';
@@ -628,15 +629,29 @@ function handleInput(value) {
     // Обработка операторов
     if (['+', '-', '*', '/'].includes(value)) {
         // Сбрасываем режим ВП при нажатии оператора, но сохраняем экспоненциальную форму
-        if (expectingExponent) {
-            // Сохраняем экспоненциальную форму в currentInput перед сбросом режима
-            const baseNum = currentInput;
-            const expPart = (exponentDigits === '' ? '00' : exponentDigits.padStart(2, '0'));
-            currentInput = `${baseNum}e${exponentSign}${expPart}`;
+        if (expectingExponent || isVPFormatted) {
+            // Сохраняем информацию о степени перед сбросом
+            const savedExponentSign = exponentSign;
+            const savedExponentDigits = exponentDigits;
             
-            expectingExponent = false;
-            exponentSign = '';
-            exponentDigits = '';
+            if (expectingExponent) {
+                // Сохраняем экспоненциальную форму в currentInput перед сбросом режима
+                const baseNum = currentInput;
+                const expPart = (exponentDigits === '' ? '00' : exponentDigits.padStart(2, '0'));
+                currentInput = `${baseNum}e${exponentSign}${expPart}`;
+                
+                expectingExponent = false;
+                exponentSign = '';
+                exponentDigits = '';
+            } else if (isVPFormatted) {
+                // Если уже в VP формате, преобразуем currentInput в экспоненциальную форму
+                const baseNum = currentInput;
+                const expPart = (savedExponentDigits === '' ? '00' : savedExponentDigits.padStart(2, '0'));
+                currentInput = `${baseNum}e${savedExponentSign}${expPart}`;
+            }
+            
+            // Сбрасываем флаг VP форматирования
+            isVPFormatted = false;
         }
         handleOperation(value);
         return;
@@ -693,7 +708,7 @@ function handleInput(value) {
                 }
                 
                 // Форматируем мантиссу: знак + целая часть + точка + 9 нулей = 11 знаков
-                const mantissaFormatted = mantissaSign + mantissaBody + '.' + paddedIntegerPart;
+                const mantissaFormatted = mantissaSign + mantissaBody + '.' + '0'.repeat(9);
                 
                 // Форматируем порядок: пробел + 00 = 3 знака
                 const expPart = ' 00';
@@ -702,6 +717,9 @@ function handleInput(value) {
             }
             
             updateScreen();
+            
+            // Устанавливаем флаг VP форматирования
+            isVPFormatted = true;
         } else {
             // Нечего переводить в экспоненту — ошибка
             hasError = true;
@@ -741,6 +759,7 @@ function handleInput(value) {
             if (resultMode) clearAll();
             currentInput = Pi.toString();
             displayValue = currentInput;
+            resultMode = true;
             updateScreen();
             break;
             
@@ -1270,6 +1289,7 @@ function handleZapFunction() {
     
     // Сохраняем значение для записи
     memoryRegisterX = inputValue;
+    resultMode = true;
     
     console.log(`ЗП: Ожидание ввода номера регистра (1 или 2) для значения: ${inputValue}`);
 }
@@ -1283,11 +1303,13 @@ function handleVpFunction() {
         currentInput = memoryRegister1.toString();
         displayValue = formatNumberAuto(currentInput);
         console.log(`ВП: Вызвано из регистра 1: ${memoryRegister1}`);
+        resultMode = true;
         updateScreen();
     } else if (memoryRegister2 !== 0) {
         currentInput = memoryRegister2.toString();
         displayValue = formatNumberAuto(currentInput);
         console.log(`ВП: Вызвано из регистра 2: ${memoryRegister2}`);
+        resultMode = true;
         updateScreen();
     } else {
         console.log("ВП: Нет данных в памяти");
@@ -1308,6 +1330,7 @@ function handleSchFunction() {
     // Входим в режим ожидания ввода номера регистра
     waitingForMemoryRegister = true;
     memoryOperation = 'sch';
+    resultMode = true;
     
     console.log(`СЧ: Ожидание ввода номера регистра (1 или 2)`);
 }
@@ -1509,6 +1532,7 @@ function calculateResult() {
                     // Сбрасываем флаги
                     isWaitingForPowerExponent = false;
                     powerBase = null;
+                    resultMode = true;
                     updateScreen();
                 } catch (e) {
                     hasError = true;
@@ -1552,6 +1576,7 @@ function calculateResult() {
                     // Сбрасываем флаги
                     isWaitingForPowerExponent = false;
                     memoryRegisterX = 0;
+                    resultMode = true;
                     updateScreen();
                 } catch (e) {
                     hasError = true;
@@ -1644,6 +1669,7 @@ function calculateResult() {
         isVPFormatted = false;
         
         displayValue = formatNumberAuto(currentInput);
+        resultMode = true;
         updateScreen();
     } else if (lastOperator !== null && lastOperand !== null && lastOperand2 !== null && inputValue !== null) {
         // Логика повторения операции: используем текущее значение (inputValue) и lastOperand2
@@ -1689,6 +1715,7 @@ function calculateResult() {
         isVPFormatted = false;
         
         displayValue = formatNumberAuto(currentInput);
+        resultMode = true;
         updateScreen();
     } else if (inputValue !== null) {
         displayValue = formatNumberAuto(currentInput);
