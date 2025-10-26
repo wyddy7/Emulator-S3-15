@@ -556,11 +556,6 @@ function handleInput(value) {
                 displayValue = mantissaFormatted + expPart; // 14 символов без "e"
             } else {
                 // Если нет точки, добавляем её в конец
-                let paddedIntegerPart = mantissaBody;
-                while (paddedIntegerPart.length < 9) {
-                    paddedIntegerPart += '0';
-                }
-                
                 // Форматируем мантиссу: знак + целая часть + точка + 9 нулей = 11 знаков
                 const mantissaFormatted = mantissaSign + mantissaBody + '.' + '0'.repeat(9);
                 
@@ -671,6 +666,9 @@ function handleInput(value) {
     // Обработка ВП (ввод порядка) - научная форма
     if (value === 'vp') {
         if (currentInput !== '') {
+            // ИСПРАВЛЕНИЕ: Сбрасываем resultMode, чтобы разрешить работу с числом в режиме ВП
+            resultMode = false;
+            
             // Входим в режим ввода порядка: по умолчанию показываем два нуля в порядке
             expectingExponent = true;
             exponentSign = '+';     // всегда храним явный знак (положительный)
@@ -702,11 +700,6 @@ function handleInput(value) {
                 displayValue = mantissaFormatted + expPart; // 14 символов без "e"
             } else {
                 // Если нет точки, добавляем её в конец
-                let paddedIntegerPart = '';
-                while (paddedIntegerPart.length < 9) {
-                    paddedIntegerPart += '0';
-                }
-                
                 // Форматируем мантиссу: знак + целая часть + точка + 9 нулей = 11 знаков
                 const mantissaFormatted = mantissaSign + mantissaBody + '.' + '0'.repeat(9);
                 
