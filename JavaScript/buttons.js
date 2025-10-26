@@ -641,8 +641,16 @@ function handleInput(value) {
             } else if (isVPFormatted) {
                 // Если уже в VP формате, преобразуем currentInput в экспоненциальную форму
                 const baseNum = currentInput;
-                const expPart = (savedExponentDigits === '' ? '00' : savedExponentDigits.padStart(2, '0'));
-                currentInput = `${baseNum}e${savedExponentSign}${expPart}`;
+                
+                // КРИТИЧЕСКАЯ ПРОВЕРКА: Не добавляем экспоненту, если она уже есть
+                if (baseNum.includes('e') || baseNum.includes('E')) {
+                    // Уже в экспоненциальной форме (после нормализации ВП)
+                    currentInput = baseNum; // Оставляем как есть, НЕ добавляем экспоненту
+                } else {
+                    // Добавляем экспоненту только если её нет
+                    const expPart = (savedExponentDigits === '' ? '00' : savedExponentDigits.padStart(2, '0'));
+                    currentInput = `${baseNum}e${savedExponentSign}${expPart}`;
+                }
             }
             
             // Сбрасываем флаг VP форматирования
@@ -890,7 +898,15 @@ function handleInput(value) {
                 
                 // Сбрасываем режим ВП
                 expectingExponent = false;
-                isVPFormatted = true;
+                
+                // ПРОВЕРКА: Если currentInput уже содержит экспоненту (после нормализации),
+                // НЕ устанавливаем isVPFormatted, чтобы избежать двойной экспоненты
+                if (currentInput.includes('e') || currentInput.includes('E')) {
+                    isVPFormatted = false; // Уже в экспоненциальной форме
+                } else {
+                    isVPFormatted = true; // Для дальнейшего VP отображения
+                }
+                
                 exponentSign = '';
                 exponentDigits = '';
                 
