@@ -1777,6 +1777,7 @@ function calculateResult() {
         updateScreen();
     } else if (inputValue !== null) {
         displayValue = formatNumberAuto(currentInput);
+        resultMode = true;
         updateScreen();
     }
 }
