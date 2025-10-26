@@ -1021,7 +1021,7 @@ function handleOperation(op) {
         previousInput = currentInput;
         currentInput = '';
         operator = op;
-        // CORRECTED REPEAT LOGIC: ЗАПОМИНАЕМ ПЕРВЫЙ ОПЕРАНД И ОПЕРАТОР ДЛЯ ПОВТОРА ПРИ =
+        // ЗАПОМИНАЕМ ПЕРВЫЙ ОПЕРАНД И ОПЕРАТОР ДЛЯ ПОВТОРА ПРИ =
         lastOperand = parseFloat(previousInput.replace(',', '.'));
         lastOperand2 = null; // Сбрасываем lastOperand2, пока не выполнена операция
         lastOperator = op;
@@ -1029,7 +1029,7 @@ function handleOperation(op) {
     } else if (previousInput !== '') {
         operator = op;
         displayValue = previousInput;
-        // CORRECTED REPEAT LOGIC: ЗАПОМИНАЕМ ПЕРВЫЙ ОПЕРАНД И ОПЕРАТОР ДЛЯ ПОВТОРА ПРИ =
+        // ЗАПОМИНАЕМ ПЕРВЫЙ ОПЕРАНД И ОПЕРАТОР ДЛЯ ПОВТОРА ПРИ =
         lastOperand = parseFloat(previousInput.replace(',', '.'));
         lastOperand2 = null; // Сбрасываем lastOperand2, пока не выполнена операция
         lastOperator = op;
@@ -1566,6 +1566,7 @@ function evaluateExpression(tokens) {
  * Вычисление результата выражения
  */
 function calculateResult() {
+    console.log(`[CALC START] operator="${operator}", currentInput="${currentInput}", previousInput="${previousInput}", lastOperand=${lastOperand}, lastOperand2=${lastOperand2}`);
     if (!isPowerOn || hasError) return;
     if (currentLevelOpen || bracketStack.length > 0) {
         if (currentLevelOpen) endBracket();
@@ -1670,8 +1671,10 @@ function calculateResult() {
     }
     
     const inputValue = currentInput !== '' ? parseFloat(currentInput) : null;
+    console.log(`[CALC DEBUG] currentInput="${currentInput}", inputValue=${inputValue}`);
     if (operator !== null) {
         const prevValue = parseFloat(previousInput);
+        console.log(`[CALC DEBUG] operator="${operator}", prevValue=${prevValue}, previousInput="${previousInput}"`);
         if (isNaN(prevValue) || (inputValue === null && operator !== null)) {
             if (inputValue === null) {
                 displayValue = formatNumberAuto(previousInput);
@@ -1682,9 +1685,14 @@ function calculateResult() {
             }
         }
         let result;
-        const currentOperand = inputValue !== null ? inputValue : prevValue;
+        // КРИТИЧЕСКАЯ ПРАВКА: Если inputValue === null (повтор =), используем сохраненный lastOperand2
+        const currentOperand = inputValue !== null ? inputValue : (lastOperand2 !== null ? lastOperand2 : prevValue);
+        console.log(`[CALC DEBUG] currentOperand=${currentOperand}, lastOperand2=${lastOperand2}`);
         switch (operator) {
-            case '+': result = prevValue + currentOperand; break;
+            case '+': 
+                result = prevValue + currentOperand;
+                console.log(`[CALC DEBUG] result=${result}`);
+                break;
             case '-': result = prevValue - currentOperand; break;
             case '*': result = prevValue * currentOperand; break;
             case '/':
@@ -1710,16 +1718,6 @@ function calculateResult() {
             return;
         }
         
-        // Проверка на "практически равные" числа для экспоненциальных операций
-        // Если результат очень близок к одному из операндов, используем исходный формат
-        if (Math.abs(result - prevValue) < Math.abs(prevValue) * 1e-10) {
-            // Результат практически равен первому операнду - сохраняем его формат
-            currentInput = previousInput;
-            displayValue = formatNumberAuto(currentInput);
-            updateScreen();
-            return;
-        }
-        
         // Обработка специальных флагов
         if (memoryRegisterX !== 0) {
             // Функция P: sqrt(x^2 + y^2)
@@ -1734,12 +1732,27 @@ function calculateResult() {
             powerBase = null; // Сбрасываем после использования
         }
         
-        // CORRECTED REPEAT LOGIC: Сохраняем операнды и оператор для следующего повтора
+        // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Сохраняем операнды ДО проверки "практически равных"
         // Результат становится новым первым операндом для повтора
         lastOperand = result;
         // Введённый операнд (currentOperand) становится вторым операндом для повтора
         lastOperand2 = currentOperand;
+        console.log(`[SAVE RESULT] lastOperand=${lastOperand}, lastOperand2=${lastOperand2}, operator="${operator}"`);
         lastOperator = operator;
+        
+        // Проверка на "практически равные" числа для экспоненциальных операций
+        // Если результат очень близок к одному из операндов, используем исходный формат
+        if (Math.abs(result - prevValue) < Math.abs(prevValue) * 1e-10) {
+            // Результат практически равен первому операнду - сохраняем его формат
+            currentInput = previousInput;
+            displayValue = formatNumberAuto(currentInput);
+            operator = null;
+            previousInput = '';
+            resultMode = true;
+            updateScreen();
+            return;
+        }
+        
         operator = null;
         previousInput = '';
         
@@ -1756,7 +1769,9 @@ function calculateResult() {
         // Логика повторения операции: используем текущее значение (inputValue) и lastOperand2
         let result;
         switch (lastOperator) {
-            case '+': result = inputValue + lastOperand2; break;
+            case '+': 
+                result = inputValue + lastOperand2;
+                break;
             case '-': result = inputValue - lastOperand2; break;
             case '*': result = inputValue * lastOperand2; break;
             case '/':
