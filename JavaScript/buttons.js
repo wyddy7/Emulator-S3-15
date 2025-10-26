@@ -1505,7 +1505,7 @@ function evaluateExpression(tokens) {
         if (op === '*') {
             const lastNum = tempStack.pop();
             const result = lastNum * nextNum;
-            if (Math.abs(result) > 9.9999999e99) {
+            if (Math.abs(result) > 9.9999999e99 || (Math.abs(result) < 1e-99 && result !== 0)) {
                 hasError = true;
                 throw new Error("Overflow");
             }
@@ -1517,7 +1517,7 @@ function evaluateExpression(tokens) {
                 throw new Error("Division by zero");
             }
             const result = lastNum / nextNum;
-            if (Math.abs(result) > 9.9999999e99) {
+            if (Math.abs(result) > 9.9999999e99 || (Math.abs(result) < 1e-99 && result !== 0)) {
                 hasError = true;
                 throw new Error("Overflow");
             }
@@ -1537,7 +1537,7 @@ function evaluateExpression(tokens) {
         if (op === '+') finalResult += nextNum;
         else if (op === '-') finalResult -= nextNum;
         
-        if (Math.abs(finalResult) > 9.9999999e99) {
+        if (Math.abs(finalResult) > 9.9999999e99 || (Math.abs(finalResult) < 1e-99 && finalResult !== 0)) {
             hasError = true;
             throw new Error("Overflow");
         }
@@ -1687,6 +1687,13 @@ function calculateResult() {
             return;
         }
         
+        // Проверка на слишком малое число - ПЕРЕПОЛНЕНИЕ!
+        if (Math.abs(result) < 1e-99 && result !== 0) {
+            hasError = true;
+            updateScreen();
+            return;
+        }
+        
         // Проверка на "практически равные" числа для экспоненциальных операций
         // Если результат очень близок к одному из операндов, используем исходный формат
         if (Math.abs(result - prevValue) < Math.abs(prevValue) * 1e-10) {
@@ -1747,6 +1754,13 @@ function calculateResult() {
             default: return;
         }
         if (Math.abs(result) > 9.9999999e99) {
+            hasError = true;
+            updateScreen();
+            return;
+        }
+        
+        // Проверка на слишком малое число - ПЕРЕПОЛНЕНИЕ!
+        if (Math.abs(result) < 1e-99 && result !== 0) {
             hasError = true;
             updateScreen();
             return;
