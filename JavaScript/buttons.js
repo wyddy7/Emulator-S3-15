@@ -817,31 +817,76 @@ function handleInput(value) {
             break;
             
         case '=':
-            // БЛОКИРУЕМ РАВНО ЕСЛИ В РЕЖИМЕ ВП (введена степень)
+            // ОБРАБОТКА ВП С НОРМАЛИЗАЦИЕЙ
             if (expectingExponent) {
-                console.log("Равно заблокировано: введена степень через ВП");
-                return; // Просто выходим, не обрабатываем равно
-            }
-            
-            // Сбрасываем режим ВП при нажатии равно, но сохраняем экспоненциальную форму
-            if (expectingExponent) {
-                // Сохраняем экспоненциальную форму в currentInput перед сбросом режима
+                console.log("ВП: Выполняется нормализация перед вычислением");
+                
                 const baseNum = currentInput;
-                const expPart = (exponentDigits === '' ? '00' : exponentDigits.padStart(2, '0'));
-                currentInput = `${baseNum}e${exponentSign}${expPart}`;
+                const expDigits = (exponentDigits === '' ? '00' : exponentDigits.padStart(2, '0'));
                 
-                // Устанавливаем флаг VP форматирования для отображения степеней
-                isVPFormatted = true;
+                // Преобразуем в число
+                const currentValue = parseFloat(baseNum);
                 
+                if (currentValue === 0) {
+                    // Ноль - просто форматируем без изменений
+                    currentInput = `${baseNum}e${exponentSign}${expDigits}`;
+                } else {
+                    // Нормализация для ненулевого числа
+                    let baseStr = baseNum.replace('-', '');
+                    
+                    // Находим количество целых разрядов (цифр до точки)
+                    let integerDigits = '';
+                    if (baseStr.includes('.')) {
+                        integerDigits = baseStr.split('.')[0];
+                    } else {
+                        integerDigits = baseStr;
+                    }
+                    
+                    // Количество разрядов для сдвига
+                    const shift = integerDigits.length - 1;
+                    
+                    // Применяем сдвиг: уменьшаем мантиссу
+                    const normalizedValue = currentValue / Math.pow(10, shift);
+                    
+                    // Корректируем порядок
+                    const currentExp = parseInt(expDigits) * (exponentSign === '-' ? -1 : 1);
+                    const newExp = currentExp + shift;
+                    
+                    // Форматируем новый порядок
+                    const absNewExp = Math.abs(newExp);
+                    const newExpStr = absNewExp.toString().padStart(2, '0');
+                    const newExpSign = newExp >= 0 ? '+' : '-';
+                    
+                    // Форматируем нормализованное число
+                    let normalizedStr = Math.abs(normalizedValue).toString();
+                    if (!normalizedStr.includes('.')) {
+                        normalizedStr += '.000000000';
+                    } else {
+                        // Дополняем до 10 знаков после точки
+                        const [intPart, decPart] = normalizedStr.split('.');
+                        const paddedDec = (decPart || '').substring(0, 9).padEnd(9, '0');
+                        normalizedStr = intPart + '.' + paddedDec;
+                    }
+                    
+                    // Сохраняем знак
+                    const sign = currentValue < 0 ? '-' : '';
+                    currentInput = `${sign}${normalizedStr}e${newExpSign}${newExpStr}`;
+                    
+                    console.log(`ВП: Нормализация ${baseNum} × 10^${currentExp} = ${normalizedStr} × 10^${newExp}`);
+                }
+                
+                // Сбрасываем режим ВП
                 expectingExponent = false;
+                isVPFormatted = true;
                 exponentSign = '';
                 exponentDigits = '';
                 
-                // Обновляем экран с экспоненциальной формой
+                // Отображаем нормализованное число
                 displayValue = formatNumberAuto(currentInput);
                 updateScreen();
-                return; // Выходим БЕЗ вызова calculateResult()
+                return; // Выходим без вычисления
             }
+            
             calculateResult();
             break;
             
