@@ -833,17 +833,37 @@ function handleInput(value) {
                 } else {
                     // Нормализация для ненулевого числа
                     let baseStr = baseNum.replace('-', '');
+                    let shift = 0;
                     
-                    // Находим количество целых разрядов (цифр до точки)
-                    let integerDigits = '';
-                    if (baseStr.includes('.')) {
-                        integerDigits = baseStr.split('.')[0];
+                    // Определяем направление и величину сдвига
+                    if (Math.abs(currentValue) >= 1) {
+                        // Число >= 1: сдвиг влево
+                        let integerDigits = '';
+                        if (baseStr.includes('.')) {
+                            integerDigits = baseStr.split('.')[0];
+                        } else {
+                            integerDigits = baseStr;
+                        }
+                        shift = integerDigits.length - 1;
                     } else {
-                        integerDigits = baseStr;
+                        // Число < 1: сдвиг вправо
+                        if (baseStr.includes('.')) {
+                            const parts = baseStr.split('.');
+                            const decimalPart = parts[1];
+                            
+                            // Считаем нули после точки
+                            let zeroCount = 0;
+                            for (let i = 0; i < decimalPart.length; i++) {
+                                if (decimalPart[i] === '0') {
+                                    zeroCount++;
+                                } else {
+                                    break;
+                                }
+                            }
+                            // Сдвиг = -(количество нулей + 1)
+                            shift = -(zeroCount + 1);
+                        }
                     }
-                    
-                    // Количество разрядов для сдвига
-                    const shift = integerDigits.length - 1;
                     
                     // Применяем сдвиг: уменьшаем мантиссу
                     const normalizedValue = currentValue / Math.pow(10, shift);
