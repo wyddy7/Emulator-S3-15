@@ -1566,7 +1566,6 @@ function evaluateExpression(tokens) {
  * Вычисление результата выражения
  */
 function calculateResult() {
-    console.log(`[CALC START] operator="${operator}", currentInput="${currentInput}", previousInput="${previousInput}", lastOperand=${lastOperand}, lastOperand2=${lastOperand2}`);
     if (!isPowerOn || hasError) return;
     if (currentLevelOpen || bracketStack.length > 0) {
         if (currentLevelOpen) endBracket();
@@ -1671,10 +1670,8 @@ function calculateResult() {
     }
     
     const inputValue = currentInput !== '' ? parseFloat(currentInput) : null;
-    console.log(`[CALC DEBUG] currentInput="${currentInput}", inputValue=${inputValue}`);
     if (operator !== null) {
         const prevValue = parseFloat(previousInput);
-        console.log(`[CALC DEBUG] operator="${operator}", prevValue=${prevValue}, previousInput="${previousInput}"`);
         if (isNaN(prevValue) || (inputValue === null && operator !== null)) {
             if (inputValue === null) {
                 displayValue = formatNumberAuto(previousInput);
@@ -1687,11 +1684,9 @@ function calculateResult() {
         let result;
         // КРИТИЧЕСКАЯ ПРАВКА: Если inputValue === null (повтор =), используем сохраненный lastOperand2
         const currentOperand = inputValue !== null ? inputValue : (lastOperand2 !== null ? lastOperand2 : prevValue);
-        console.log(`[CALC DEBUG] currentOperand=${currentOperand}, lastOperand2=${lastOperand2}`);
         switch (operator) {
             case '+': 
                 result = prevValue + currentOperand;
-                console.log(`[CALC DEBUG] result=${result}`);
                 break;
             case '-': result = prevValue - currentOperand; break;
             case '*': result = prevValue * currentOperand; break;
@@ -1737,7 +1732,6 @@ function calculateResult() {
         lastOperand = result;
         // Введённый операнд (currentOperand) становится вторым операндом для повтора
         lastOperand2 = currentOperand;
-        console.log(`[SAVE RESULT] lastOperand=${lastOperand}, lastOperand2=${lastOperand2}, operator="${operator}"`);
         lastOperator = operator;
         
         // Проверка на "практически равные" числа для экспоненциальных операций
