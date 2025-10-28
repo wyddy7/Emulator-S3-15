@@ -437,6 +437,88 @@ function getInputValue() {
 }
 
 /**
+ * Нормализует число в режиме ВП перед операциями
+ * Преобразует 25e45 → 2.5e46 (нормализованная экспоненциальная форма)
+ * @param {string} baseNum - Базовая часть числа (например, "25")
+ * @param {string} exponentSign - Знак степени ('+' или '-')
+ * @param {string} exponentDigits - Цифры степени (например, "45")
+ * @returns {string} - Нормализованное число в формате '2.5e46'
+ */
+function normalizeVPNumber(baseNum, exponentSign, exponentDigits) {
+    const expDigits = (exponentDigits === '' ? '00' : exponentDigits.padStart(2, '0'));
+    const currentValue = parseFloat(baseNum);
+    
+    if (currentValue === 0) {
+        // Ноль - просто форматируем без изменений
+        return `${baseNum}e${exponentSign}${expDigits}`;
+    }
+    
+    // Нормализация для ненулевого числа
+    let baseStr = baseNum.replace('-', '');
+    let shift = 0;
+    
+    // Определяем направление и величину сдвига
+    if (Math.abs(currentValue) >= 1) {
+        // Число >= 1: сдвиг влево
+        let integerDigits = '';
+        if (baseStr.includes('.')) {
+            integerDigits = baseStr.split('.')[0];
+        } else {
+            integerDigits = baseStr;
+        }
+        shift = integerDigits.length - 1;
+    } else {
+        // Число < 1: сдвиг вправо
+        if (baseStr.includes('.')) {
+            const parts = baseStr.split('.');
+            const decimalPart = parts[1];
+            
+            // Считаем нули после точки
+            let zeroCount = 0;
+            for (let i = 0; i < decimalPart.length; i++) {
+                if (decimalPart[i] === '0') {
+                    zeroCount++;
+                } else {
+                    break;
+                }
+            }
+            // Сдвиг = -(количество нулей + 1)
+            shift = -(zeroCount + 1);
+        }
+    }
+    
+    // Применяем сдвиг: уменьшаем мантиссу
+    const normalizedValue = currentValue / Math.pow(10, shift);
+    
+    // Корректируем порядок
+    const currentExp = parseInt(expDigits) * (exponentSign === '-' ? -1 : 1);
+    const newExp = currentExp + shift;
+    
+    // Форматируем новый порядок
+    const absNewExp = Math.abs(newExp);
+    const newExpStr = absNewExp.toString().padStart(2, '0');
+    const newExpSign = newExp >= 0 ? '+' : '-';
+    
+    // Форматируем нормализованное число
+    let normalizedStr = Math.abs(normalizedValue).toString();
+    if (!normalizedStr.includes('.')) {
+        normalizedStr += '.000000000';
+    } else {
+        // Дополняем до 10 знаков после точки
+        const [intPart, decPart] = normalizedStr.split('.');
+        const paddedDec = (decPart || '').substring(0, 9).padEnd(9, '0');
+        normalizedStr = intPart + '.' + paddedDec;
+    }
+    
+    // Сохраняем знак
+    const sign = currentValue < 0 ? '-' : '';
+    const result = `${sign}${normalizedStr}e${newExpSign}${newExpStr}`;
+    
+    console.log(`ВП: Нормализация ${baseNum} × 10^${currentExp} = ${normalizedStr} × 10^${newExp}`);
+    return result;
+}
+
+/**
  * Обработка ввода пользователя
  * @param {string} value - Введенное значение
  */
@@ -675,33 +757,26 @@ function handleInput(value) {
     
     // Обработка операторов
     if (['+', '-', '*', '/'].includes(value)) {
-        // Сбрасываем режим ВП при нажатии оператора, но сохраняем экспоненциальную форму
+        // ИСПРАВЛЕНИЕ: Нормализуем число в режиме ВП при нажатии оператора
         if (expectingExponent || isVPFormatted) {
-            // Сохраняем информацию о степени перед сбросом
-            const savedExponentSign = exponentSign;
-            const savedExponentDigits = exponentDigits;
-            
             if (expectingExponent) {
-                // Сохраняем экспоненциальную форму в currentInput перед сбросом режима
+                // Нормализуем перед операцией: 25e45 → 2.5e46
                 const baseNum = currentInput;
-                const expPart = (exponentDigits === '' ? '00' : exponentDigits.padStart(2, '0'));
-                currentInput = `${baseNum}e${exponentSign}${expPart}`;
+                const normalized = normalizeVPNumber(baseNum, exponentSign, exponentDigits);
+                currentInput = normalized;
                 
                 expectingExponent = false;
                 exponentSign = '';
                 exponentDigits = '';
             } else if (isVPFormatted) {
-                // Если уже в VP формате, преобразуем currentInput в экспоненциальную форму
+                // Если уже в VP формате, проверяем нужна ли нормализация
                 const baseNum = currentInput;
                 
-                // КРИТИЧЕСКАЯ ПРОВЕРКА: Не добавляем экспоненту, если она уже есть
-                if (baseNum.includes('e') || baseNum.includes('E')) {
-                    // Уже в экспоненциальной форме (после нормализации ВП)
-                    currentInput = baseNum; // Оставляем как есть, НЕ добавляем экспоненту
-                } else {
-                    // Добавляем экспоненту только если её нет
-                    const expPart = (savedExponentDigits === '' ? '00' : savedExponentDigits.padStart(2, '0'));
-                    currentInput = `${baseNum}e${savedExponentSign}${expPart}`;
+                // Если число уже в экспоненциальной форме (содержит 'e'), оставляем как есть
+                if (!baseNum.includes('e') && !baseNum.includes('E')) {
+                    // Нормализуем только если нет экспоненты
+                    const normalized = normalizeVPNumber(baseNum, exponentSign, exponentDigits);
+                    currentInput = normalized;
                 }
             }
             
@@ -828,19 +903,55 @@ function handleInput(value) {
         case 'sin':
         case 'cos':
         case 'tg':
+            // ИСПРАВЛЕНИЕ: Нормализуем ВП перед функциями
+            if (expectingExponent) {
+                const normalized = normalizeVPNumber(currentInput, exponentSign, exponentDigits);
+                currentInput = normalized;
+                expectingExponent = false;
+                exponentSign = '';
+                exponentDigits = '';
+                isVPFormatted = false;
+            }
             handleTrigFunction(value);
             break;
             
         case 'lg':
         case 'ln':
+            // ИСПРАВЛЕНИЕ: Нормализуем ВП перед функциями
+            if (expectingExponent) {
+                const normalized = normalizeVPNumber(currentInput, exponentSign, exponentDigits);
+                currentInput = normalized;
+                expectingExponent = false;
+                exponentSign = '';
+                exponentDigits = '';
+                isVPFormatted = false;
+            }
             handleLogFunction(value);
             break;
             
         case 'sqrt':
+            // ИСПРАВЛЕНИЕ: Нормализуем ВП перед функциями
+            if (expectingExponent) {
+                const normalized = normalizeVPNumber(currentInput, exponentSign, exponentDigits);
+                currentInput = normalized;
+                expectingExponent = false;
+                exponentSign = '';
+                exponentDigits = '';
+                isVPFormatted = false;
+            }
             handleSqrtFunction();
             break;
             
         case 'reverse':
+            // ИСПРАВЛЕНИЕ: Нормализуем ВП перед функциями
+            if (expectingExponent) {
+                const normalized = normalizeVPNumber(currentInput, exponentSign, exponentDigits);
+                currentInput = normalized;
+                expectingExponent = false;
+                exponentSign = '';
+                exponentDigits = '';
+                isVPFormatted = false;
+            }
             handleReverseFunction();
             break;
             
@@ -850,14 +961,41 @@ function handleInput(value) {
             break;
             
         case 'exp_degree':
+            // ИСПРАВЛЕНИЕ: Нормализуем ВП перед функциями
+            if (expectingExponent) {
+                const normalized = normalizeVPNumber(currentInput, exponentSign, exponentDigits);
+                currentInput = normalized;
+                expectingExponent = false;
+                exponentSign = '';
+                exponentDigits = '';
+                isVPFormatted = false;
+            }
             handleExpFunction();
             break;
             
         case 'p':
+            // ИСПРАВЛЕНИЕ: Нормализуем ВП перед функциями
+            if (expectingExponent) {
+                const normalized = normalizeVPNumber(currentInput, exponentSign, exponentDigits);
+                currentInput = normalized;
+                expectingExponent = false;
+                exponentSign = '';
+                exponentDigits = '';
+                isVPFormatted = false;
+            }
             handlePFunction();
             break;
             
         case 'y_degree':
+            // ИСПРАВЛЕНИЕ: Нормализуем ВП перед функциями
+            if (expectingExponent) {
+                const normalized = normalizeVPNumber(currentInput, exponentSign, exponentDigits);
+                currentInput = normalized;
+                expectingExponent = false;
+                exponentSign = '';
+                exponentDigits = '';
+                isVPFormatted = false;
+            }
             handleYDegreeFunction();
             break;
             
