@@ -410,6 +410,17 @@ function clearAll() {
 }
 
 /**
+ * Ограничивает мантиссу до 11 символов включительно
+ * Экран калькулятора: 14 символов = 11 (мантисса) + 3 (порядок)
+ * @param {string} mantissa - Мантисса для ограничения
+ * @returns {string} - Мантисса длиной максимум 11 символов
+ */
+function limitMantissaTo11Chars(mantissa) {
+    if (mantissa.length <= 11) return mantissa;
+    return mantissa.substring(0, 11);
+}
+
+/**
  * Обработка ввода пользователя
  * @param {string} value - Введенное значение
  */
@@ -451,7 +462,9 @@ function handleInput(value) {
             }
             
             // Форматируем мантиссу: знак + целая часть + точка + 9 цифр дробной части = 11 знаков
-            const mantissaFormatted = mantissaSign + integerPart + '.' + paddedDecimalPart;
+            const mantissaFormatted = limitMantissaTo11Chars(
+                mantissaSign + integerPart + '.' + paddedDecimalPart
+            );
             
             // Форматируем порядок
             const expSign = exponentSign === '-' ? '-' : ' ';
@@ -461,7 +474,9 @@ function handleInput(value) {
         } else {
             // Если нет точки, добавляем её в конец
             // Форматируем мантиссу: знак + целая часть + точка + 9 нулей = 11 знаков
-            const mantissaFormatted = mantissaSign + mantissaBody + '.' + '0'.repeat(9);
+            const mantissaFormatted = limitMantissaTo11Chars(
+                mantissaSign + mantissaBody + '.' + '0'.repeat(9)
+            );
             
             // Форматируем порядок
             const expSign = exponentSign === '-' ? '-' : ' ';
@@ -564,7 +579,9 @@ function handleInput(value) {
                 }
                 
                 // Форматируем мантиссу: знак + целая часть + точка + 9 цифр дробной части = 11 знаков
-                const mantissaFormatted = mantissaSign + integerPart + '.' + paddedDecimalPart;
+                const mantissaFormatted = limitMantissaTo11Chars(
+                    mantissaSign + integerPart + '.' + paddedDecimalPart
+                );
                 
                 // Форматируем порядок
                 const expSign = exponentSign === '-' ? '-' : ' ';
@@ -574,7 +591,9 @@ function handleInput(value) {
             } else {
                 // Если нет точки, добавляем её в конец
                 // Форматируем мантиссу: знак + целая часть + точка + 9 нулей = 11 знаков
-                const mantissaFormatted = mantissaSign + mantissaBody + '.' + '0'.repeat(9);
+                const mantissaFormatted = limitMantissaTo11Chars(
+                    mantissaSign + mantissaBody + '.' + '0'.repeat(9)
+                );
                 
                 // Форматируем порядок
                 const expSign = exponentSign === '-' ? '-' : ' ';
@@ -717,7 +736,9 @@ function handleInput(value) {
                 }
                 
                 // Форматируем мантиссу: знак + целая часть + точка + 9 цифр дробной части = 11 знаков
-                const mantissaFormatted = mantissaSign + integerPart + '.' + paddedDecimalPart;
+                const mantissaFormatted = limitMantissaTo11Chars(
+                    mantissaSign + integerPart + '.' + paddedDecimalPart
+                );
                 
                 // Форматируем порядок: пробел + 00 = 3 знака
                 const expPart = ' 00';
@@ -726,7 +747,9 @@ function handleInput(value) {
             } else {
                 // Если нет точки, добавляем её в конец
                 // Форматируем мантиссу: знак + целая часть + точка + 9 нулей = 11 знаков
-                const mantissaFormatted = mantissaSign + mantissaBody + '.' + '0'.repeat(9);
+                const mantissaFormatted = limitMantissaTo11Chars(
+                    mantissaSign + mantissaBody + '.' + '0'.repeat(9)
+                );
                 
                 // Форматируем порядок: пробел + 00 = 3 знака
                 const expPart = ' 00';
