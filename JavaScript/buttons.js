@@ -421,6 +421,22 @@ function limitMantissaTo11Chars(mantissa) {
 }
 
 /**
+ * Получает числовое значение для функций калькулятора
+ * Использует currentInput, previousInput или 0 по умолчанию
+ * @returns {number} - Числовое значение (0 если оба пустые)
+ */
+function getInputValue() {
+    if (currentInput !== '') {
+        return parseFloat(currentInput);
+    } else if (previousInput !== '') {
+        return parseFloat(previousInput);
+    } else {
+        // Если оба пустые, используем 0 (значение дисплея после сброса)
+        return 0;
+    }
+}
+
+/**
  * Обработка ввода пользователя
  * @param {string} value - Введенное значение
  */
@@ -1086,7 +1102,7 @@ function handleOperation(op) {
  * @param {string} func - Функция (sin, cos, tg)
  */
 function handleTrigFunction(func) {
-    const inputValue = currentInput !== '' ? parseFloat(currentInput) : parseFloat(previousInput);
+    const inputValue = getInputValue();
     
     if (isNaN(inputValue)) {
         hasError = true;
@@ -1165,7 +1181,7 @@ function handleTrigFunction(func) {
  * @param {string} func - Функция (lg, ln)
  */
 function handleLogFunction(func) {
-    const inputValue = currentInput !== '' ? parseFloat(currentInput) : parseFloat(previousInput);
+    const inputValue = getInputValue();
     
     if (isNaN(inputValue) || inputValue <= 0) {
         hasError = true;
@@ -1242,7 +1258,7 @@ function handleSqrtFunction() {
  * Обработка обратного числа (1/x)
  */
 function handleReverseFunction() {
-    const inputValue = currentInput !== '' ? parseFloat(currentInput) : parseFloat(previousInput);
+    const inputValue = getInputValue();
     
     if (isNaN(inputValue) || inputValue === 0) {
         hasError = true;
@@ -1293,7 +1309,7 @@ function handleNegateFunction() {
  * Обработка экспоненты (e^x)
  */
 function handleExpFunction() {
-    const inputValue = currentInput !== '' ? parseFloat(currentInput) : parseFloat(previousInput);
+    const inputValue = getInputValue();
     
     if (isNaN(inputValue)) {
         hasError = true;
@@ -1325,7 +1341,7 @@ function handleExpFunction() {
  * Обработка функции P (корень из суммы квадратов)
  */
 function handlePFunction() {
-    const inputValue = currentInput !== '' ? parseFloat(currentInput) : parseFloat(previousInput);
+    const inputValue = getInputValue();
     
     if (isNaN(inputValue)) {
         hasError = true;
@@ -1348,7 +1364,7 @@ function handlePFunction() {
  * Обработка возведения в степень y^x
  */
 function handleYDegreeFunction() {
-    const inputValue = currentInput !== '' ? parseFloat(currentInput) : parseFloat(previousInput);
+    const inputValue = getInputValue();
     
     if (isNaN(inputValue)) {
         hasError = true;
