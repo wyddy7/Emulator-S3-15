@@ -1673,47 +1673,44 @@ function calculateResult() {
                 hasError = true;
                 updateScreen();
             }
-        } else if (memoryRegisterX !== 0) {
+        } else if (powerBase === null && isWaitingForPowerExponent) {
             // P функция (корень из суммы квадратов)
-            if (inputValue !== null) {
-                let result;
-                try {
-                    // Вычисляем √(x² + y²)
-                    const x = memoryRegisterX;
-                    const y = inputValue;
-                    result = Math.sqrt(x * x + y * y);
-                    
-                    // Проверка на переполнение
-                    if (Math.abs(result) > 9.9999999e99) {
-                        hasError = true;
-                        updateScreen();
-                        return;
-                    }
-                    // Проверка на слишком малое число
-                    if (Math.abs(result) < 1e-99 && result !== 0) {
-                        hasError = true;
-                        updateScreen();
-                        return;
-                    }
-                    
-                    // Сохраняем результат в обычной форме
-                    currentInput = result.toString();
-                    
-                    // Сбрасываем флаг VP форматирования, так как результат теперь обычное число
-                    isVPFormatted = false;
-                    
-                    displayValue = formatNumberAuto(currentInput);
-                    // Сбрасываем флаги
-                    isWaitingForPowerExponent = false;
-                    memoryRegisterX = 0;
-                    resultMode = true;
-                    updateScreen();
-                } catch (e) {
+            // Если inputValue === null, используем 0 (если ничего не ввели после P)
+            const yValue = inputValue !== null ? inputValue : 0;
+            
+            let result;
+            try {
+                // Вычисляем √(x² + y²)
+                const x = memoryRegisterX;
+                const y = yValue;
+                result = Math.sqrt(x * x + y * y);
+                
+                // Проверка на переполнение
+                if (Math.abs(result) > 9.9999999e99) {
                     hasError = true;
                     updateScreen();
+                    return;
                 }
-            } else {
-                // Если не ввели второе число для P функции
+                // Проверка на слишком малое число
+                if (Math.abs(result) < 1e-99 && result !== 0) {
+                    hasError = true;
+                    updateScreen();
+                    return;
+                }
+                
+                // Сохраняем результат в обычной форме
+                currentInput = result.toString();
+                
+                // Сбрасываем флаг VP форматирования, так как результат теперь обычное число
+                isVPFormatted = false;
+                
+                displayValue = formatNumberAuto(currentInput);
+                // Сбрасываем флаги
+                isWaitingForPowerExponent = false;
+                memoryRegisterX = 0;
+                resultMode = true;
+                updateScreen();
+            } catch (e) {
                 hasError = true;
                 updateScreen();
             }
@@ -1767,20 +1764,6 @@ function calculateResult() {
             hasError = true;
             updateScreen();
             return;
-        }
-        
-        // Обработка специальных флагов
-        if (memoryRegisterX !== 0) {
-            // Функция P: sqrt(x^2 + y^2)
-            const firstValue = memoryRegisterX;
-            result = Math.sqrt(firstValue * firstValue + inputValue * inputValue);
-            memoryRegisterX = 0; // Сбрасываем после использования
-        }
-        
-        if (powerBase !== null) {
-            // Функция y^x
-            result = Math.pow(powerBase, inputValue);
-            powerBase = null; // Сбрасываем после использования
         }
         
         // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Сохраняем операнды ДО проверки "практически равных"
