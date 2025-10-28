@@ -1666,6 +1666,11 @@ function endBracket() {
         expressionStack.push(value);
     }
     
+    // Если последний элемент — оператор, добавляем 0 (например: 2 * ) → 2 * 0)
+    if (expressionStack.length > 0 && typeof expressionStack[expressionStack.length - 1] === 'string') {
+        expressionStack.push(0);
+    }
+    
     if (expressionStack.length === 0) {
         expressionStack.push(0);
     }
