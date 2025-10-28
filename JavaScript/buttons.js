@@ -435,24 +435,41 @@ function handleInput(value) {
         const baseNum = currentInput;
         const expPart = (exponentDigits === '' ? '00' : exponentDigits.padStart(2, '0'));
 
-        // Форматируем напрямую без "e"
+        // ИСПРАВЛЕНИЕ: Используем такую же логику форматирования, как при вводе цифр
+        // НЕ нормализуем мантиссу - сохраняем исходное число
         const mantissaSign = baseNum.startsWith('-') ? '-' : '';
-        let mantissaBody = baseNum.replace('-', '').replace('.', '');
-
-        // Дополняем мантиссу до 10 цифр
-        while (mantissaBody.length < 10) {
-            mantissaBody += '0';
+        let mantissaBody = baseNum.replace('-', '');
+        
+        // Если есть точка, работаем с целой и дробной частями отдельно
+        if (mantissaBody.includes('.')) {
+            const [integerPart, decimalPart] = mantissaBody.split('.');
+            
+            // Дополняем дробную часть до 9 цифр
+            let paddedDecimalPart = decimalPart;
+            while (paddedDecimalPart.length < 9) {
+                paddedDecimalPart += '0';
+            }
+            
+            // Форматируем мантиссу: знак + целая часть + точка + 9 цифр дробной части = 11 знаков
+            const mantissaFormatted = mantissaSign + integerPart + '.' + paddedDecimalPart;
+            
+            // Форматируем порядок
+            const expSign = exponentSign === '-' ? '-' : ' ';
+            const expPartFormatted = expSign + expPart;
+            
+            displayValue = mantissaFormatted + expPartFormatted; // 14 символов без "e"
+        } else {
+            // Если нет точки, добавляем её в конец
+            // Форматируем мантиссу: знак + целая часть + точка + 9 нулей = 11 знаков
+            const mantissaFormatted = mantissaSign + mantissaBody + '.' + '0'.repeat(9);
+            
+            // Форматируем порядок
+            const expSign = exponentSign === '-' ? '-' : ' ';
+            const expPartFormatted = expSign + expPart;
+            
+            displayValue = mantissaFormatted + expPartFormatted; // 14 символов без "e"
         }
-        const mantissaDigits = mantissaBody.slice(0, 10);
-
-        // Форматируем мантиссу: знак + 1 цифра + точка + 9 цифр = 11 знаков
-        const mantissaFormatted = mantissaSign + mantissaDigits[0] + '.' + mantissaDigits.slice(1);
-
-        // Форматируем порядок
-        const expSign = exponentSign === '-' ? '-' : ' ';
-        const expPartFormatted = expSign + expPart;
-
-        displayValue = mantissaFormatted + expPartFormatted; // 14 символов без "e"
+        
         updateScreen();
         return; // выходим, чтобы не обработать как обычный negate
     }
